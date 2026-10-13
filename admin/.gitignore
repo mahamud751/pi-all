@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Next.js build output and caches
+.next/
+out/
+build/
+coverage/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Logs and deployment settings
+*.log
+.vercel/
+
+# OS and editor temporary files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
