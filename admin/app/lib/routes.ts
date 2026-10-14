@@ -52,3 +52,25 @@ export function viewForPath(pathname: string): View {
   const detail = (Object.entries(viewRoutes) as [View, string][]).find(([, path]) => path.includes("[id]") && pathname.startsWith(path.split("[id]")[0]));
   return detail?.[0] || "dashboard";
 }
+
+export const authPaths = ["/sign-in", "/password-recovery", "/accept-invitation"];
+
+// Every console screen is served by one catch-all route, so dev mode compiles it once.
+export function resolvePath(pathname: string): { view: View; id: string } | "auth" | null {
+  if (authPaths.includes(pathname)) return "auth";
+  const entries = Object.entries(viewRoutes) as [View, string][];
+  const exact = entries.find(([, path]) => path === pathname);
+  if (exact) return { view: exact[0], id: "" };
+  for (const [view, path] of entries) {
+    if (!path.includes("[id]")) continue;
+    const prefix = path.split("[id]")[0];
+    const rest = pathname.slice(prefix.length);
+    if (pathname.startsWith(prefix) && rest && !rest.includes("/")) {
+      const id = decodeURIComponent(rest);
+      return { view, id: id === "preview" ? "" : id };
+    }
+  }
+  return null;
+}
+
+export const staticPaths = [...authPaths, ...Object.values(viewRoutes).filter((path) => !path.includes("[id]"))];

@@ -2,8 +2,8 @@
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams, usePathname, useRouter } from "next/navigation";
-import * as Icons from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Icons } from "./icons";
 import { api, downloadCsv, loadSession, saveSession, uploadFile, type Session } from "./lib/api";
 import { Avatar, Badge, Bars, Gate, Icon, Metric, Metrics, Note, Page, Pager, Select, Table, Tabs, Thumb, Who, day, money, pretty, tone, when } from "./ui";
 
@@ -70,18 +70,26 @@ const screens: { id: string; view: View; office: boolean; label: string }[] = [
 
 
 
+// Last response per API path. Revisiting a screen shows this at once and refreshes in the background.
+const queryCache = new Map<string, any>();
+
 function useQuery(path: string | null) {
-  const [state, setState] = useState<QueryState & { path: string | null }>({ loading: Boolean(path), error: "", data: null, path });
+  const [state, setState] = useState<QueryState & { path: string | null }>(() => {
+    const cached = path ? queryCache.get(path) : undefined;
+    return { loading: Boolean(path) && cached === undefined, error: "", data: cached ?? null, path };
+  });
   const [tick, setTick] = useState(0);
   useEffect(() => {
     if (!path) return;
     let live = true;
-    setState((current) => ({ ...current, loading: true, error: "", path }));
-    api(path).then((data) => { if (live) setState({ loading: false, error: "", data, path }); })
+    const cached = queryCache.get(path);
+    setState((current) => cached !== undefined ? { loading: false, error: "", data: cached, path } : current.path === path && current.data ? { ...current, error: "" } : { loading: true, error: "", data: null, path });
+    api(path).then((data) => { queryCache.set(path, data); if (live) setState({ loading: false, error: "", data, path }); })
       .catch((error: Error) => { if (live) setState({ loading: false, error: error.message, data: null, path }); });
     return () => { live = false; };
   }, [path, tick]);
-  const ready = state.path === path ? state : { loading: Boolean(path), error: "", data: null };
+  const cachedNow = path ? queryCache.get(path) : undefined;
+  const ready = state.path === path ? state : { loading: Boolean(path) && cachedNow === undefined, error: "", data: cachedNow ?? null };
   return { loading: ready.loading, error: ready.error, data: ready.data, reload: () => setTick((value) => value + 1) };
 }
 
@@ -120,7 +128,7 @@ function Auth({ onSession, initialMode = "sign" }: { onSession: (session: Sessio
       if (mode === "invite") onSession(await api("/api/auth/accept-invite", { method: "POST", body: { token: token || "invite-aisyah-demo", name, password } }));
     } catch (err) { setError(err instanceof Error ? err.message : "Request failed"); }
   }
-  return <div className="auth-screen"><div className="auth-art" style={{ backgroundImage: "linear-gradient(#0b1039cc,#0b1039e6),url(https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=80)" }}><div className="logo"><Icons.MapPin size={34} /><b>Place<span>In</span></b></div><h1>{mode === "invite" ? "Join Amina Properties\non PlaceIn" : "One workspace.\nEvery property.\nYour whole team."}</h1><div>{mode === "invite" && <><div className="feature"><Icons.House /><span><b>Work together</b>Access shared projects and listings</span></div><div className="feature"><Icons.Users /><span><b>Streamlined collaboration</b>Keep your team and clients aligned</span></div><div className="feature"><Icons.ChartNoAxesCombined /><span><b>Achieve more</b>Turn opportunities into results</span></div></>}</div></div>
+  return <div className="auth-screen"><div className="auth-art" style={{ backgroundImage: "linear-gradient(160deg,rgba(11,15,46,0.82) 0%,rgba(16,20,64,0.9) 55%,rgba(11,15,46,0.97) 100%),url(https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=80)" }}><div className="logo"><span className="logo-mark"><Icons.MapPin size={20} /></span><b>Place<span>In</span></b></div><h1>{mode === "invite" ? "Join Amina Properties\non PlaceIn" : "One workspace.\nEvery property.\nYour whole team."}</h1><div>{mode !== "invite" && <><p className="feature-lead">Listings, reels, enquiries and teams — managed from one beautiful workspace.</p><div className="auth-stats"><span><b>24</b>Head-office screens</span><span><b>22</b>Agency screens</span><span><b>1</b>Sign-in for every role</span></div></>}{mode === "invite" && <><div className="feature"><Icons.House /><span><b>Work together</b>Access shared projects and listings</span></div><div className="feature"><Icons.Users /><span><b>Streamlined collaboration</b>Keep your team and clients aligned</span></div><div className="feature"><Icons.ChartNoAxesCombined /><span><b>Achieve more</b>Turn opportunities into results</span></div></>}</div></div>
     <form className="auth-form" onSubmit={submit}>{mode === "invite" && <small>YOU&apos;RE INVITED</small>}<h1>{mode === "sign" ? "Sign in to PlaceIn" : mode === "recover" ? "Reset your password" : "Accept your invitation"}</h1>
       <p>{mode === "invite" ? "Use the invitation token from your agency. The seeded token is invite-aisyah-demo." : "Head office and agency accounts use the same sign-in. The API chooses the portal from the role."}</p>
       {error && <div className="error-box">{error}</div>}{info && <div className="notice">{info}</div>}
@@ -133,17 +141,16 @@ function Auth({ onSession, initialMode = "sign" }: { onSession: (session: Sessio
       {mode === "invite" && <div className="expiry"><Icons.Clock3 /><p>This invitation expires in 6 days<small>If it expires, ask the agency owner for a new invite.</small></p></div>}
       <button className="btn gold" type="submit">{mode === "sign" ? "Sign in" : mode === "invite" ? "Accept invitation" : token ? "Update password" : "Send reset token"} <Icons.ArrowRight size={16} /></button>
       <div className="inline-actions"><button type="button" className="btn outline" onClick={() => setMode("sign")}>Sign in</button><button type="button" className="btn outline" onClick={() => setMode("recover")}>Password recovery</button><button type="button" className="btn outline" onClick={() => { setMode("invite"); setToken("invite-aisyah-demo"); }}>Accept invitation</button></div>
-      <div className="demo-grid">{[["ahad@placein.com", "Super admin"], ["support@placein.com", "Admin / support"], ["tech@placein.com", "Maintenance"], ["sarah@aminaproperties.my", "Agency owner"]].map(([value, label]) => <button type="button" key={value} onClick={() => { setMode("sign"); setEmail(value); }}><b>{label}</b><small>{value}</small></button>)}</div>
+      <div className="demo-title">Demo accounts</div><div className="demo-grid">{[["ahad@placein.com", "Super admin"], ["support@placein.com", "Admin / support"], ["tech@placein.com", "Maintenance"], ["sarah@aminaproperties.my", "Agency owner"]].map(([value, label]) => <button type="button" key={value} onClick={() => { setMode("sign"); setEmail(value); }}><b>{label}</b><small>{value}</small></button>)}</div>
     </form></div>;
 }
 
 const ConsoleContext = createContext<React.ComponentProps<typeof Screen> | null>(null);
 
-export function ConsolePage({ view }: { view: View }) {
+export function ConsolePage({ view, id }: { view: View; id: string }) {
   const context = useContext(ConsoleContext);
-  const params = useParams<{ id?: string }>();
   if (!context) return null;
-  return <Screen {...context} view={view} id={params.id === "preview" ? "" : params.id || ""} />;
+  return <Screen {...context} view={view} id={id} />;
 }
 
 export default function Console({ children }: { children: React.ReactNode }) {
@@ -159,7 +166,35 @@ export default function Console({ children }: { children: React.ReactNode }) {
   const [notice, setNotice] = useState("");
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<any>(null);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [navOpen, setNavOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
   useEffect(() => { setSession(loadSession()); setReady(true); }, []);
+  useEffect(() => {
+    let saved: string | null = null;
+    try { saved = localStorage.getItem("placein-theme"); } catch {}
+    setTheme(saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light");
+  }, []);
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem("placein-theme", theme); } catch {}
+  }, [theme]);
+  useEffect(() => { setNavOpen(false); setMenuOpen(false); }, [pathname]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (event: MouseEvent) => { if (!(event.target as HTMLElement).closest(".profile-wrap")) setMenuOpen(false); };
+    window.addEventListener("mousedown", close);
+    return () => window.removeEventListener("mousedown", close);
+  }, [menuOpen]);
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); searchRef.current?.focus(); }
+      if (event.key === "Escape") { setMenuOpen(false); setNavOpen(false); setQuery(""); searchRef.current?.blur(); }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   const screenBoot = useRef(false);
   useEffect(() => {
     if (!ready || screenBoot.current) return;
@@ -169,14 +204,14 @@ export default function Console({ children }: { children: React.ReactNode }) {
     if (!screen) return;
     screenBoot.current = true;
     if (screen.id.startsWith("A17") || screen.id.startsWith("A18") || screen.id.startsWith("A19")) {
-      saveSession(null);
+      queryCache.clear(); saveSession(null);
       router.replace(screen.id.startsWith("A18") ? "/password-recovery" : screen.id.startsWith("A19") ? "/accept-invitation" : "/sign-in");
       setSession(null);
       return;
     }
     const email = screen.office ? "ahad@placein.com" : "sarah@aminaproperties.my";
     api("/api/auth/login", { method: "POST", body: { email, password: "PlaceIn2026!" } }).then((next) => {
-      saveSession(next);
+      queryCache.clear(); saveSession(next);
       setSession(next);
       router.replace(routeFor(screen.view));
       setNotice("");
@@ -188,11 +223,11 @@ export default function Console({ children }: { children: React.ReactNode }) {
     const timer = setTimeout(() => { api(`/api/platform/search?q=${encodeURIComponent(query)}`).then(setHits).catch(() => setHits(null)); }, 250);
     return () => clearTimeout(timer);
   }, [query, session]);
-  function enter(next: Session) { saveSession(next); setSession(next); if (authPage) router.replace("/dashboard"); setNotice(""); }
+  function enter(next: Session) { queryCache.clear(); saveSession(next); setSession(next); if (authPage) router.replace("/dashboard"); setNotice(""); }
   function go(next: View, id = "") { router.push(routeFor(next, id)); setNotice(""); if (next === "wizard") setWizardStep(1); }
   async function leave(mode: "sign" | "recover" | "invite") {
     await api("/api/auth/logout", { method: "POST" }).catch(() => null);
-    saveSession(null);
+    queryCache.clear(); saveSession(null);
     router.push(mode === "recover" ? "/password-recovery" : mode === "invite" ? "/accept-invitation" : "/sign-in");
     setSession(null);
   }
@@ -208,7 +243,7 @@ export default function Console({ children }: { children: React.ReactNode }) {
       try {
         await api("/api/auth/logout", { method: "POST" }).catch(() => null);
         const next = await api("/api/auth/login", { method: "POST", body: { email: wantsStaff ? "ahad@placein.com" : "sarah@aminaproperties.my", password: "PlaceIn2026!" } });
-        saveSession(next);
+        queryCache.clear(); saveSession(next);
         setSession(next);
         setNotice(`${screen.id} opened as ${next.user.name}.`);
       } catch (error) {
@@ -226,13 +261,16 @@ export default function Console({ children }: { children: React.ReactNode }) {
   const countryQuery = country ? `country=${encodeURIComponent(country)}` : "";
   const roleNames: Record<string, string> = { SUPER_ADMIN: "Super admin", ADMIN_SUPPORT: "Admin support", MAINTENANCE: "Maintenance", OWNER: "Agency owner" };
   const roleLabel = roleNames[session.user.role] || pretty(session.user.role);
-  return <div className="app"><aside className="sidebar"><div className="logo"><Icons.MapPin size={30} /><b>Place<span>In</span></b></div><nav>{nav.map((item) => <div key={item.label}>{"section" in item && item.section && <div className="section">{item.section}</div>}<Link href={routeFor(item.view)} className={pathname === routeFor(item.view) || (item.view !== "dashboard" && pathname.startsWith(`${routeFor(item.view)}/`)) ? "active" : ""} onClick={() => setNotice("")}><Icon name={item.icon} /><span>{item.label}</span>{item.view === "health" && <i />}</Link></div>)}</nav>
-    <div className="side-foot"><select value="" onChange={(event) => { if (event.target.value) openScreen(event.target.value); }}><option value="">Open a design screen</option><optgroup label="Agency portal">{screens.filter((item) => !item.office).map((item) => <option key={item.id} value={item.id}>{item.id}</option>)}</optgroup><optgroup label="Head office">{screens.filter((item) => item.office).map((item) => <option key={item.id} value={item.id}>{item.id}</option>)}</optgroup></select></div></aside>
-    <div className="workspace"><header className="topbar"><div className="switcher"><Icons.Building2 size={16} /><b>{staff ? "Head Office" : session.user.agencyName || "Agency"}</b></div>
+  return <div className={`app${navOpen ? " nav-open" : ""}`}><div className="scrim" onClick={() => setNavOpen(false)} /><aside className="sidebar"><div className="logo"><span className="logo-mark"><Icons.MapPin size={20} /></span><b>Place<span>In</span></b><em>{staff ? "HQ" : "Agency"}</em></div><nav>{nav.map((item) => <div key={item.label}>{"section" in item && item.section && <div className="section">{item.section}</div>}<Link href={routeFor(item.view)} className={pathname === routeFor(item.view) || (item.view !== "dashboard" && pathname.startsWith(`${routeFor(item.view)}/`)) ? "active" : ""} onClick={() => setNotice("")}><Icon name={item.icon} /><span>{item.label}</span>{item.view === "health" && <i />}</Link></div>)}</nav>
+    <div className="side-foot"><div className="side-user"><Avatar name={session.user.name} /><p><b>{session.user.name}</b><small>{roleLabel}</small></p><button title="Sign out" aria-label="Sign out" onClick={() => leave("sign")}><Icons.LogOut size={16} /></button></div><select value="" onChange={(event) => { if (event.target.value) openScreen(event.target.value); }}><option value="">Open a design screen</option><optgroup label="Agency portal">{screens.filter((item) => !item.office).map((item) => <option key={item.id} value={item.id}>{item.id}</option>)}</optgroup><optgroup label="Head office">{screens.filter((item) => item.office).map((item) => <option key={item.id} value={item.id}>{item.id}</option>)}</optgroup></select></div></aside>
+    <div className="workspace"><header className="topbar"><button className="icon-btn menu-btn" aria-label="Open navigation" onClick={() => setNavOpen(true)}><Icons.Menu /></button><div className="switcher"><Icons.Building2 size={16} /><b>{staff ? "Head Office" : session.user.agencyName || "Agency"}</b></div>
       {staff ? <CountrySelect value={country} setValue={setCountry} /> : <div className="country"><Icons.Globe2 size={15} /> Malaysia</div>}
-      <div className="head-search search-wrap"><Icons.Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={staff ? "Search agencies, agents, properties..." : "Search properties, projects, people..."} />{hits && <div className="search-pop">{[["agencies", "agency"], ["agents", "agent"], ["properties", "property"], ["users", "user"]].map(([key, target]) => (hits[key] || []).map((hit: any) => <button key={hit.id} onClick={() => { go(target as View, hit.id); setQuery(""); setHits(null); }}><b>{hit.name || hit.title}</b><small>{hit.email || hit.reference || hit.code || hit.city || ""}</small></button>))}{!hits.agencies?.length && !hits.agents?.length && !hits.properties?.length && !hits.users?.length && <div className="empty">No matches.</div>}</div>}</div>
-      <button className="icon-btn" onClick={() => go(staff ? "notifications" : "appointments")}><Icons.Bell /><i /></button>
-      <button className="profile" onClick={() => leave("sign")}><Avatar name={session.user.name} /><b>{session.user.name}<small>{staff ? roleLabel : roleLabel}</small></b><Icons.ChevronDown size={16} /></button>
+      <div className="head-search search-wrap"><Icons.Search size={16} /><input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder={staff ? "Search agencies, agents, properties…" : "Search properties, projects, people…"} /><kbd>⌘ K</kbd>{hits && <div className="search-pop">{[["agencies", "agency"], ["agents", "agent"], ["properties", "property"], ["users", "user"]].map(([key, target]) => (hits[key] || []).map((hit: any) => <button key={hit.id} onClick={() => { go(target as View, hit.id); setQuery(""); setHits(null); }}><b>{hit.name || hit.title}</b><small>{hit.email || hit.reference || hit.code || hit.city || ""}</small></button>))}{!hits.agencies?.length && !hits.agents?.length && !hits.properties?.length && !hits.users?.length && <div className="empty">No matches.</div>}</div>}</div>
+      <button className="icon-btn" title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} aria-label="Toggle theme" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>{theme === "dark" ? <Icons.Sun /> : <Icons.Moon />}</button>
+      <button className="icon-btn" title="Notifications" aria-label="Notifications" onClick={() => go(staff ? "notifications" : "appointments")}><Icons.Bell /><i /></button>
+      <div className="profile-wrap"><button className="profile" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}><Avatar name={session.user.name} /><b>{session.user.name}<small>{roleLabel}</small></b><Icons.ChevronDown size={16} /></button>
+        {menuOpen && <div className="menu-pop"><header><b>{session.user.name}</b><small>{session.user.email || roleLabel}</small></header><button onClick={() => go("settings")}><Icons.Settings size={16} /> Settings</button><button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>{theme === "dark" ? <Icons.Sun size={16} /> : <Icons.Moon size={16} />} {theme === "dark" ? "Light mode" : "Dark mode"}</button><button className="danger-item" onClick={() => leave("sign")}><Icons.LogOut size={16} /> Sign out</button></div>}
+      </div>
     </header><main>{notice && <div className="banner">{notice}</div>}<ConsoleContext.Provider value={{ session, view, go, id: "", countryQuery, wizardStep, setWizardStep, notify: setNotice }}>{children}</ConsoleContext.Provider></main></div></div>;
 }
 
@@ -374,7 +412,7 @@ function PropertyDetail({ id, go, notify }: { id: string; go: Go; notify: (s: st
       <button className="btn gold" onClick={() => act(`/api/properties/${row.id}/status`, { status, reason, leadAttributedToPlaceIn: lead === "unknown" ? undefined : lead === "yes" })}>Request correction</button>
     </Head>
     <div className="grid two">
-      <div className="hero-gallery"><div className="main" style={{ backgroundImage: `url(${cover})` }} /><div className="side">{gallery.slice(1, 5).map((photo: any) => <i key={photo.id} style={{ backgroundImage: `url(${photo.url})` }} />)}{gallery.length < 2 && <i style={{ backgroundImage: `url(${cover})` }} />}</div></div>
+      {cover ? <div className="hero-gallery"><div className="main" style={{ backgroundImage: `url(${cover})` }} /><div className="side">{gallery.slice(1, 5).map((photo: any) => <i key={photo.id} style={{ backgroundImage: `url(${photo.url})` }} />)}{gallery.length < 2 && <i style={{ backgroundImage: `url(${cover})` }} />}</div></div> : <div className="hero-gallery empty-gallery"><span className="empty-ico"><Icons.ImageOff size={26} /></span><b>No photos yet</b><small>Add photos of at least 1600×1200 before this listing can be published.</small></div>}
       <section className="card panel"><div className="panel-head"><h2>{row.title}</h2><Badge status={row.listingType}>{row.listingType === "RENT" ? "For rent" : "For sale"}</Badge></div><p className="muted">{row.reference} · {row.area}, {row.city}, {row.countryName}</p><h1 style={{ margin: "8px 0" }}>{money(row.price, row.currency)}</h1><div className="kv"><span>Type</span><b>{row.propertyType}</b><span>Bedrooms</span><b>{row.beds}</b><span>Bathrooms</span><b>{row.baths}</b><span>Floor area</span><b>{Number(row.sizeSqft || 0).toLocaleString()} sq ft</b><span>Agency</span><b>{row.agency?.name}</b><span>Agent</span><b>{row.agent?.name || "Unassigned"}</b><span>Project</span><b>{row.project?.name || "—"}</b><span>Private address</span><b>{row.addressPrivate || "—"}</b></div></section>
     </div>
     <Metrics cols={4}><Stat icon="Eye" title="Property views" value={row.views} note="Recorded views" /><Stat icon="Users" title="Unique viewers" value={row.uniqueViewers} note="Deduplicated" tone="purple" /><Stat icon="Bookmark" title="Saves" value={row.saves} note="On this listing" tone="pink" /><Stat icon="MessageSquareText" title="Enquiries" value={row.enquiries?.length || 0} note={`${row.offers?.length || 0} offers`} tone="green" /></Metrics>
@@ -748,7 +786,21 @@ function Projects({ go }: { go: Go }) {
 function ProjectDetail({ id, go }: { id: string; go: Go }) {
   const state = useQuery(id ? `/api/projects/${id}` : null);
   if (!id) return <PickFirst path="/api/projects?pageSize=1" go={(value) => go("project", value)} label="project" />;
-  return <Gate state={state}>{(row) => <><Head title={row.name} sub={`${row.area}, ${row.city} · ${row.units} units · ${row.agency.name}`} /><section className="card panel"><p>{row.description}</p><h3>Assigned agents</h3>{row.agents.map((agent: any) => <button key={agent.id} className="btn outline" onClick={() => go("agent", agent.id)}>{agent.name}</button>)}<h3>Properties</h3><Table columns={["Reference", "Title", "Status"]} rows={row.properties.map((property: any) => [property.reference, property.title, property.status])} onRow={(index) => go("property", row.properties[index].id)} /></section></>}</Gate>;
+  return <Gate state={state}>{(row) => {
+    const live = row.properties.filter((property: any) => property.publication === "LIVE").length;
+    return <>
+      <div className="crumb"><button onClick={() => go("projects")}>Projects</button> · {row.name}</div>
+      <section className="project-hero" style={{ backgroundImage: `url(${row.imageUrl || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=80"})` }}>
+        <div><Badge status="ACTIVE">{pretty(row.status || "Active")}</Badge><h1>{row.name}</h1><p><Icons.MapPin size={16} /> {row.area}, {row.city} · {row.agency.name}</p></div>
+      </section>
+      <Metrics><Stat icon="Building2" title="Units" value={row.units ?? "—"} note="In this project" /><Stat icon="House" title="Listings" value={row.properties.length} note={`${live} live now`} tone="green" /><Stat icon="Users" title="Assigned agents" value={row.agents.length} note="With project access" tone="purple" /><Stat icon="CircleDollarSign" title="Listed value" value={sameCurrency(row.properties, (property) => Number(property.price || 0)) || "Mixed"} note="Sum of listing prices" tone="orange" /></Metrics>
+      <div className="grid two">
+        <section className="card panel"><h2>About this project</h2><p className="muted" style={{ marginTop: 0 }}>{row.description || "No description yet."}</p>
+          <h2 style={{ marginTop: 20 }}>Properties</h2><Table columns={["Property", "Reference", "Price", "Status"]} rows={row.properties.map((property: any) => [<div className="who" key={property.id}><Thumb url={property.coverUrl} /><p><b>{property.title}</b><small>{property.agent?.name || "Unassigned"}</small></p></div>, property.reference, money(property.price, property.currency), <Badge key="s" status={property.status}>{pretty(property.status)}</Badge>])} onRow={(index) => go("property", row.properties[index].id)} /></section>
+        <section className="card panel"><h2>Assigned agents</h2>{row.agents.map((agent: any) => <button key={agent.id} className="list-row compact" onClick={() => go("agent", agent.id)}><Avatar name={agent.name} /><span className="stack-name"><b>{agent.name}</b><small>{pretty(agent.role)} · {agent.email}</small></span><Icons.ChevronRight size={16} /></button>)}{!row.agents.length && <div className="empty"><span className="empty-ico"><Icons.Users size={22} /></span>No agents assigned yet.</div>}</section>
+      </div>
+    </>;
+  }}</Gate>;
 }
 
 function People({ team, go, countryQuery }: { team: boolean; go: Go; countryQuery: string }) {
@@ -855,7 +907,7 @@ function Enquiries({ countryQuery, session, go }: { countryQuery: string; sessio
             <div className="kv"><span>Property</span><b>{current.property?.title || "—"}</b><span>Reference</span><b>{current.property?.reference || "—"}</b><span>Agency</span><b>{current.agency?.name || "—"}</b><span>Agent</span><b>{current.agent?.name || "Unassigned"}</b><span>Channel</span><b>{pretty(current.channel)}</b><span>Created</span><b>{when(current.createdAt)}</b><span>First response</span><b>{current.responseMinutes == null ? "Waiting" : `${current.responseMinutes} min`}</b></div>
             <Note>{current.privateMessage || "Private message text is not stored."}</Note>
             <div className="stack">{current.property?.id && <button className="btn outline" onClick={() => go("property", current.property.id)}>View property</button>}{staff && current.agency?.id && <button className="btn outline" onClick={() => go("agency", current.agency.id)}>View agency</button>}{staff && current.customer?.id && <button className="btn outline" onClick={() => go("user", current.customer.id)}>View user</button>}<button className="btn gold" onClick={() => update(current.id, { status: "ANSWERED" }).catch((error) => alert(error.message))}>Mark answered</button></div>
-          </> : <p>No enquiry matches these filters.</p>}</aside></div>
+          </> : <div className="empty"><span className="empty-ico"><Icons.Inbox size={24} /></span><small>No enquiry matches these filters.</small></div>}</aside></div>
         <div className="follow"><section className="card panel"><h3>Waiting on this page</h3><strong>{waiting}</strong><p className="muted">No first response recorded yet.</p></section><section className="card panel"><h3>Unassigned</h3><strong>{unassignedCount}</strong><p className="muted">Leads with no agent on this page.</p></section><section className="card panel"><h3>Answered</h3><strong>{answered}</strong><p className="muted">Marked answered on this page.</p></section></div>
       </>;
     }}</Gate></>;
@@ -903,7 +955,7 @@ function Appointments({ notify, session, go }: { notify: (s: string) => void; se
             <div className="inline-actions"><button className="btn gold" onClick={() => setStatus(current.id, "CONFIRMED")}>Confirm</button><button className="btn outline" onClick={() => setStatus(current.id, "RESCHEDULE_PROPOSED")}>Suggest new time</button><button className="btn danger" onClick={() => setStatus(current.id, "CANCELLED")}>Decline</button></div>
             <div className="stack" style={{ marginTop: 10 }}>{current.property?.id && <button className="btn outline" onClick={() => go("property", current.property.id)}>View property</button>}{staff && current.agency?.id && <button className="btn outline" onClick={() => go("agency", current.agency.id)}>View agency</button>}{staff && current.customer?.id && <button className="btn outline" onClick={() => go("user", current.customer.id)}>View user</button>}</div>
             <p className="muted">A completed viewing does not confirm a property purchase.</p>
-          </> : <p>No appointments yet.</p>}</aside></div>
+          </> : <div className="empty"><span className="empty-ico"><Icons.Inbox size={24} /></span><small>No appointments yet.</small></div>}</aside></div>
       </>;
     }}</Gate></>;
 }
@@ -930,7 +982,7 @@ function Offers({ notify, go }: { notify: (s: string) => void; go: Go }) {
             <label>Offer status<select value={current.status} onChange={(event) => setStatus(current.id, event.target.value).catch((error) => notify(error.message))}>{["SUBMITTED", "ACKNOWLEDGED", "ACCEPTED", "DECLINED", "WITHDRAWN"].map((status) => <option key={status} value={status}>{pretty(status)}</option>)}</select></label>
             <div className="stack" style={{ marginTop: 10 }}><button className="btn outline" onClick={() => go("user", current.user.id)}>View user</button><button className="btn outline" onClick={() => go("property", current.property.id)}>View property</button></div>
             <Note>No completed purchase is recorded here. An accepted offer is not a sold property.</Note>
-          </> : <p>No offers yet.</p>}</aside></div>
+          </> : <div className="empty"><span className="empty-ico"><Icons.Inbox size={24} /></span><small>No offers yet.</small></div>}</aside></div>
         <div className="follow"><section className="card panel"><h3>Awaiting response</h3><strong>{count("SUBMITTED")}</strong><p className="muted">Offers still marked submitted.</p></section><section className="card panel"><h3>Declined or withdrawn</h3><strong>{count("DECLINED") + count("WITHDRAWN")}</strong><p className="muted">Closed without acceptance.</p></section><section className="card panel"><h3>Accepted, still listed</h3><strong>{rows.filter((row: any) => row.status === "ACCEPTED" && row.property?.status !== "SOLD").length}</strong><p className="muted">Acceptance does not change the listing to sold.</p></section></div>
       </>;
     }}</Gate></>;
@@ -957,7 +1009,7 @@ function Outcomes({ notify, go }: { notify: (s: string) => void; go: Go }) {
             <div className="kv"><span>Reported</span><b>{day(current.statusDate)}</b><span>Days advertised</span><b>{current.advertisedDays}</b><span>PlaceIn lead</span><b>{current.leadAttributedToPlaceIn == null ? "Unknown" : current.leadAttributedToPlaceIn ? "Yes" : "No"}</b><span>Previous</span><b>{current.correctedFrom || "—"}</b></div>
             <p>{current.note || "No note on this report."}</p>
             <div className="stack"><Select value={nextOutcome} set={setNextOutcome} options={["SOLD", "LET", "WITHDRAWN"]} /><textarea value={reason} onChange={(event) => setReason(event.target.value)} /><button className="btn gold" onClick={() => correct(current.id).catch((error) => notify(error.message))}>Save correction</button><button className="btn outline" onClick={() => go("property", current.property.id)}>View property</button></div>
-          </> : <p>No reported outcomes yet.</p>}</aside></div>
+          </> : <div className="empty"><span className="empty-ico"><Icons.Inbox size={24} /></span><small>No reported outcomes yet.</small></div>}</aside></div>
       </>;
     }}</Gate></>;
 }
@@ -980,7 +1032,7 @@ function Moderation({ notify, session, go }: { notify: (s: string) => void; sess
     <Gate state={state}>{(data) => {
       const visible = queue ? data.data.filter((row: any) => row.queue === queue) : data.data;
       return <div className="approval"><section className="review-list card">{visible.map((row: any) => <button key={row.id} className={current?.id === row.id ? "selected-item" : ""} onClick={() => setCurrent(row)}><p><b>{row.subject}</b><small>{pretty(row.queue)} · {row.reason}</small></p><Badge status={row.priority === "High" ? "HIGH" : "ACTIVE"}>{row.priority}</Badge></button>)}{!visible.length && <div className="empty">This queue is clear.</div>}</section>
-      <section className="review-detail card">{current && (!queue || current.queue === queue) ? <><h2>{current.subject}</h2><div className="kv"><span>Queue</span><b>{pretty(current.queue)}</b><span>Agency</span><b>{current.agency?.name || "—"}</b><span>Reason</span><b>{current.reason}</b><span>Priority</span><b>{current.priority}</b></div>{blocked && <div className="error-box">Publication blocked. A quality failure cannot be approved until the file is replaced.</div>}<textarea value={reason} onChange={(event) => setReason(event.target.value)} /><div className="inline-actions"><button className="btn gold" disabled={blocked} onClick={() => decide(current.id, "APPROVED")}>Approve</button><button className="btn outline" onClick={() => decide(current.id, "CHANGES_REQUESTED")}>Request changes</button><button className="btn outline" onClick={() => decide(current.id, "REJECTED")}>Reject</button><button className="btn danger" onClick={() => decide(current.id, "TAKEN_DOWN")}>Take down</button>{current.agency?.id && <button className="btn outline" onClick={() => go("agency", current.agency.id)}>View agency</button>}</div><p className="muted">The decision, reviewer and reason are stored. The draft stays available for a replacement.</p></> : <p>Select an item. The decision, reviewer and reason are stored.</p>}</section></div>;
+      <section className="review-detail card">{current && (!queue || current.queue === queue) ? <><h2>{current.subject}</h2><div className="kv"><span>Queue</span><b>{pretty(current.queue)}</b><span>Agency</span><b>{current.agency?.name || "—"}</b><span>Reason</span><b>{current.reason}</b><span>Priority</span><b>{current.priority}</b></div>{blocked && <div className="error-box">Publication blocked. A quality failure cannot be approved until the file is replaced.</div>}<textarea value={reason} onChange={(event) => setReason(event.target.value)} /><div className="inline-actions"><button className="btn gold" disabled={blocked} onClick={() => decide(current.id, "APPROVED")}>Approve</button><button className="btn outline" onClick={() => decide(current.id, "CHANGES_REQUESTED")}>Request changes</button><button className="btn outline" onClick={() => decide(current.id, "REJECTED")}>Reject</button><button className="btn danger" onClick={() => decide(current.id, "TAKEN_DOWN")}>Take down</button>{current.agency?.id && <button className="btn outline" onClick={() => go("agency", current.agency.id)}>View agency</button>}</div><p className="muted">The decision, reviewer and reason are stored. The draft stays available for a replacement.</p></> : <div className="empty"><span className="empty-ico"><Icons.Inbox size={24} /></span><small>Select an item. The decision, reviewer and reason are stored.</small></div>}</section></div>;
     }}</Gate></>;
 }
 
@@ -1023,8 +1075,8 @@ function AgencyDetail({ id, go, notify, session }: { id: string; go: Go; notify:
     <Head code="03 / 24" title={row.name} sub={`${row.code} · ${row.city}, ${row.country} · Owner contact ${row.email} · Joined ${day(row.joinedAt)}`} crumb={<div className="crumb"><button onClick={() => go("agencies")}>Agencies</button> · {row.name}</div>}><Badge status={row.verification}>{pretty(row.verification)}</Badge><Badge status={row.status}>{pretty(row.status)}</Badge></Head>
     {row.financeHidden && <div className="banner">Subscription fees and invoices are hidden for this role.</div>}
     <div className="tabs">{["Overview", "Agents", "Projects", "Properties", "Media", "Leads", "Appointments", "Outcomes", "Subscription", "Invoices", "Activity"].map((item) => <button key={item} className={tab === item ? "selected" : ""} onClick={() => setTab(item)}>{item}</button>)}</div>
-    {tab === "Overview" && <><Metrics><Stat icon="Users" title="Agent accounts" value={row.agentCount} note={`Allowance ${row.agentAllowance}`} /><Stat icon="House" title="Available properties" value={row.availableProperties} note={`Listing allowance ${row.listingAllowance}`} tone="purple" /><Stat icon="MessageSquareText" title="Leads on file" value={row.leads.length} note="Latest page" tone="pink" /><Stat icon="CalendarCheck" title="Appointments" value={row.appointments.length} note="Latest page" tone="green" /></Metrics><div className="grid two"><section className="card panel"><h2>Agency contact</h2><div className="kv"><span>Email</span><b>{row.email}</b><span>Phone</span><b>{row.phone}</b><span>Website</span><b>{row.website || "—"}</b><span>Address</span><b>{row.address}</b><span>Last activity</span><b>{when(row.lastActivityAt)}</b></div><p>{row.description}</p>{session.user.role !== "MAINTENANCE" && session.user.kind === "staff" && <div className="stack"><textarea value={reason} onChange={(event) => setReason(event.target.value)} /><div className="inline-actions"><button className="btn gold" onClick={() => status("ACTIVE")}>Activate</button><button className="btn outline" onClick={() => status("RESTRICTED")}>Restrict</button><button className="btn danger" onClick={() => status("SUSPENDED")}>Suspend</button></div></div>}</section><section className="card panel"><h2>Subscription and payments</h2>{row.subscription ? <div className="kv"><span>Plan</span><b>{row.subscription.plan}</b><span>Status</span><b>{pretty(row.subscription.status)}</b><span>Fee</span><b>{money(row.subscription.monthlyFee, row.subscription.currency)}</b><span>Renews</span><b>{day(row.subscription.renewsAt)}</b></div> : <p>No subscription is visible for this role.</p>}<div className="inline-actions"><button className="btn gold" onClick={() => setTab("Invoices")}>View invoices</button><button className="btn outline" onClick={() => setTab("Subscription")}>Manage subscription</button></div></section></div>
-      <div className="grid two"><section className="card panel"><h2>Projects</h2><div className="project-grid" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>{row.projects.slice(0, 3).map((project: any) => <button key={project.id} className="card" style={{ textAlign: "left", padding: 0, overflow: "hidden" }} onClick={() => go("project", project.id)}><div className="project-img" style={{ height: 90, backgroundImage: `url(${project.imageUrl || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=70"})` }} /><div style={{ padding: 10 }}><b>{project.name}</b><p className="muted">{project.city}</p></div></button>)}</div></section><section className="card panel"><h2>Recent activity</h2>{row.activity.slice(0, 5).map((item: any) => <p key={item.id}><b>{item.action}</b><br /><span className="muted">{item.actorName} · {when(item.createdAt)}</span></p>)}</section></div></>}
+    {tab === "Overview" && <><Metrics><Stat icon="Users" title="Agent accounts" value={row.agentCount} note={`Allowance ${row.agentAllowance}`} /><Stat icon="House" title="Available properties" value={row.availableProperties} note={`Listing allowance ${row.listingAllowance}`} tone="purple" /><Stat icon="MessageSquareText" title="Leads on file" value={row.leads.length} note="Latest page" tone="pink" /><Stat icon="CalendarCheck" title="Appointments" value={row.appointments.length} note="Latest page" tone="green" /></Metrics><div className="grid two"><section className="card panel"><h2>Agency contact</h2><div className="kv"><span>Email</span><b>{row.email}</b><span>Phone</span><b>{row.phone}</b><span>Website</span><b>{row.website || "—"}</b><span>Address</span><b>{row.address}</b><span>Last activity</span><b>{when(row.lastActivityAt)}</b></div><p>{row.description}</p>{session.user.role !== "MAINTENANCE" && session.user.kind === "staff" && <div className="stack"><textarea value={reason} onChange={(event) => setReason(event.target.value)} /><div className="inline-actions"><button className="btn gold" onClick={() => status("ACTIVE")}>Activate</button><button className="btn outline" onClick={() => status("RESTRICTED")}>Restrict</button><button className="btn danger" onClick={() => status("SUSPENDED")}>Suspend</button></div></div>}</section><section className="card panel"><h2>Subscription and payments</h2>{row.subscription ? <div className="kv"><span>Plan</span><b>{row.subscription.plan}</b><span>Status</span><b>{pretty(row.subscription.status)}</b><span>Fee</span><b>{money(row.subscription.monthlyFee, row.subscription.currency)}</b><span>Renews</span><b>{day(row.subscription.renewsAt)}</b></div> : <div className="empty"><span className="empty-ico"><Icons.Inbox size={24} /></span><small>No subscription is visible for this role.</small></div>}<div className="inline-actions"><button className="btn gold" onClick={() => setTab("Invoices")}>View invoices</button><button className="btn outline" onClick={() => setTab("Subscription")}>Manage subscription</button></div></section></div>
+      <div className="grid two"><section className="card panel"><h2>Projects</h2><div className="project-grid" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>{row.projects.slice(0, 3).map((project: any) => <button key={project.id} className="card" style={{ textAlign: "left", padding: 0, overflow: "hidden" }} onClick={() => go("project", project.id)}><div className="project-img" style={{ height: 90, backgroundImage: `url(${project.imageUrl || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=70"})` }} /><div style={{ padding: 10 }}><b>{project.name}</b><p className="muted">{project.city}</p></div></button>)}</div></section><section className="card panel"><h2>Recent activity</h2>{row.activity.slice(0, 5).map((item: any) => <div className="timeline-item" key={item.id}><b>{pretty(item.action)}</b><small>{item.actorName} · {when(item.createdAt)}</small></div>)}</section></div></>}
     {tab === "Agents" && <Table columns={["Name", "Role", "Status"]} rows={row.agents.map((agent: any) => [agent.name, agent.role, agent.status])} onRow={(index) => go("agent", row.agents[index].id)} />}
     {tab === "Projects" && <Table columns={["Project", "City"]} rows={row.projects.map((project: any) => [project.name, project.city])} onRow={(index) => go("project", row.projects[index].id)} />}
     {tab === "Properties" && <Table columns={["Reference", "Title", "Status"]} rows={row.properties.map((property: any) => [property.reference, property.title, property.status])} onRow={(index) => go("property", row.properties[index].id)} />}
@@ -1032,7 +1084,7 @@ function AgencyDetail({ id, go, notify, session }: { id: string; go: Go; notify:
     {tab === "Leads" && <Table columns={["Customer", "Summary", "Status"]} rows={row.leads.map((lead: any) => [lead.freeUser.name, lead.summary, lead.status])} />}
     {tab === "Appointments" && <Table columns={["When", "Status"]} rows={row.appointments.map((item: any) => [when(item.startsAt), item.status])} />}
     {tab === "Outcomes" && <Table columns={["Outcome", "Days", "Note"]} rows={row.outcomes.map((item: any) => [item.outcome, item.advertisedDays, item.note])} />}
-    {tab === "Subscription" && <section className="card panel">{row.subscription ? <div className="kv"><span>Plan</span><b>{row.subscription.plan}</b><span>Status</span><b>{row.subscription.status}</b><span>Fee</span><b>{money(row.subscription.monthlyFee, row.subscription.currency)}</b><span>Renews</span><b>{when(row.subscription.renewsAt)}</b></div> : <p>No subscription is visible for this role.</p>}</section>}
+    {tab === "Subscription" && <section className="card panel">{row.subscription ? <div className="kv"><span>Plan</span><b>{row.subscription.plan}</b><span>Status</span><b>{row.subscription.status}</b><span>Fee</span><b>{money(row.subscription.monthlyFee, row.subscription.currency)}</b><span>Renews</span><b>{when(row.subscription.renewsAt)}</b></div> : <div className="empty"><span className="empty-ico"><Icons.Inbox size={24} /></span><small>No subscription is visible for this role.</small></div>}</section>}
     {tab === "Invoices" && <Table columns={["Number", "Amount", "Paid", "Status"]} rows={(row.invoices || []).map((invoice: any) => [invoice.number, money(invoice.amount, invoice.currency), money(invoice.amountPaid, invoice.currency), invoice.status])} />}
     {tab === "Activity" && <Table columns={["When", "Actor", "Action", "Detail"]} rows={row.activity.map((item: any) => [when(item.createdAt), item.actorName, item.action, item.detail])} />}
   </>}</Gate>;
@@ -1070,7 +1122,7 @@ function UserDetail({ id, go, notify }: { id: string; go: Go; notify: (s: string
       <Note>{row.privacy}</Note>
       <Metrics><Stat icon="MessageSquareText" title="Enquiries" value={row.enquiries.length} note="On this profile" /><Stat icon="FileText" title="Offers" value={row.offers.length} note="An accepted offer is not a purchase" tone="purple" /><Stat icon="CalendarCheck" title="Appointments" value={row.appointments.length} note="Including past bookings" tone="green" /><Stat icon="Shield" title="Privacy requests" value={row.deletionRequestedAt ? "Open" : "None"} note={row.deletionConfirmedAt ? "Anonymised" : "Deletion state"} tone="orange" /></Metrics>
       <div className="grid two"><section className="card panel"><h2>Recent enquiries</h2><Table columns={["When", "Property", "Agency", "Status"]} rows={row.enquiries.map((item: any) => [when(item.createdAt), item.property, item.agency, <Badge key={item.id} status={item.status}>{pretty(item.status)}</Badge>])} /></section>
-        <section className="card panel"><h2>Latest offer</h2>{latestOffer ? <div className="kv"><span>Amount</span><b>{money(latestOffer.amount, latestOffer.currency)}</b><span>Status</span><b>{pretty(latestOffer.status)}</b><span>Property</span><b>{latestOffer.property?.title || latestOffer.property || "—"}</b></div> : <p>No offer is on file. An accepted offer is not a completed purchase.</p>}<button className="btn outline" onClick={() => go("offers")}>View buyer activity</button></section></div>
+        <section className="card panel"><h2>Latest offer</h2>{latestOffer ? <div className="kv"><span>Amount</span><b>{money(latestOffer.amount, latestOffer.currency)}</b><span>Status</span><b>{pretty(latestOffer.status)}</b><span>Property</span><b>{latestOffer.property?.title || latestOffer.property || "—"}</b></div> : <div className="empty"><span className="empty-ico"><Icons.Inbox size={24} /></span><small>No offer is on file. An accepted offer is not a completed purchase.</small></div>}<button className="btn outline" onClick={() => go("offers")}>View buyer activity</button></section></div>
       <div className="grid two"><section className="card panel"><h2>Appointments</h2><Table columns={["When", "Property", "Agency", "Status"]} rows={row.appointments.map((item: any) => [when(item.startsAt), item.property?.title || "—", item.agency?.name || "—", <Badge key={item.id} status={item.status}>{pretty(item.status)}</Badge>])} /></section>
         <section className="card panel stack"><h2>Support and privacy</h2><textarea value={reason} onChange={(event) => setReason(event.target.value)} /><div className="inline-actions"><button className="btn gold" onClick={() => act(`/api/users/${row.id}/support`)}>Open support ticket</button><button className="btn outline" onClick={() => act(`/api/users/${row.id}/deletion-request`)}>Request deletion</button><button className="btn danger" onClick={() => act(`/api/users/${row.id}/confirm-deletion`)}>Anonymise</button></div></section></div>
     </>;
@@ -1177,7 +1229,7 @@ function Invoices({ notify, session, go }: { notify: (s: string) => void; sessio
             <div className="kv"><span>Billing month</span><b>{current.billingMonth}</b><span>Amount</span><b>{money(current.amount, current.currency)}</b><span>Paid</span><b>{money(current.amountPaid, current.currency)}</b><span>Outstanding</span><b>{money(Math.max(0, current.amount - current.amountPaid), current.currency)}</b><span>Due</span><b>{day(current.dueDate)}</b><span>Plan</span><b>{pretty(current.agency.plan)}</b></div>
             <h3>Payment attempts</h3>{(current.attempts || []).length ? current.attempts.map((attempt: any) => <p key={attempt.id}><Badge status={attempt.status}>{pretty(attempt.status)}</Badge> {money(attempt.amount, current.currency)} · {attempt.providerRef}{attempt.failureReason ? ` · ${attempt.failureReason}` : ""}</p>) : <p className="muted">No payment attempt is stored on this invoice.</p>}
             <div className="inline-actions">{session.user.financeAccess && current.status !== "PAID" && <button className="btn gold" onClick={() => act(current.id, "payments", { providerRef: `pay_${Date.now()}`, status: "SUCCESS", amount: Math.max(0, current.amount - current.amountPaid) })}>Record payment</button>}<button className="btn outline" onClick={() => act(current.id, "remind")}>Prepare reminder</button><button className="btn outline" onClick={() => go("agency", current.agency.id)}>View agency</button></div>
-          </> : <p>No invoices match this filter.</p>}</aside></div>
+          </> : <div className="empty"><span className="empty-ico"><Icons.Inbox size={24} /></span><small>No invoices match this filter.</small></div>}</aside></div>
       </>;
     }}</Gate></>;
 }
@@ -1210,7 +1262,7 @@ function Tickets({ notify, session, go }: { notify: (s: string) => void; session
         <div className="tabs"><button className={composer === "reply" ? "selected" : ""} onClick={() => setComposer("reply")}>Customer reply</button>{session.user.kind === "staff" && <button className={composer === "note" ? "selected" : ""} onClick={() => setComposer("note")}>Internal note</button>}</div>
         {composer === "reply" ? <div className="stack"><textarea value={body} onChange={(event) => setBody(event.target.value)} /><button className="btn gold" onClick={() => send("messages", body)}>Send reply</button></div> : <div className="stack"><textarea value={note} onChange={(event) => setNote(event.target.value)} /><button className="btn outline" onClick={() => send("notes", note)}>Save internal note</button></div>}
         <div className="inline-actions">{detail.data.agency?.id && <button className="btn outline" onClick={() => go("agency", detail.data.agency.id)}>View agency</button>}<button className="btn outline" onClick={() => go("health")}>Open platform health</button></div>
-      </> : <p>Select a ticket. Internal notes stay off the customer thread.</p>}</section></div>
+      </> : <div className="empty"><span className="empty-ico"><Icons.LifeBuoy size={24} /></span><b>Select a ticket</b><small>Internal notes stay off the customer thread.</small></div>}</section></div>
     <Note>Internal notes are separate from customer replies. Technical staff only see the cases their role allows.</Note></>;
 }
 
@@ -1311,7 +1363,7 @@ function Notifications({ notify }: { notify: (s: string) => void }) {
     <Note>Delivered means the provider accepted the message. PlaceIn does not track whether a person opened it.</Note>
     <Tabs items={["Templates", "Announcements", "Delivery log"]} value={tab} onChange={setTab} />
     {tab === "Templates" && <Gate state={templates}>{(rows) => <div className="split"><div><Table active={rows.findIndex((row: any) => row.id === selected?.id)} columns={["Template", "Channel", "Status", "Updated"]} rows={rows.map((row: any) => [row.subject, pretty(row.channel), <Badge key={row.id} status={row.enabled ? "ACTIVE" : "DRAFT"}>{row.enabled ? "Enabled" : "Off"}</Badge>, day(row.updatedAt)])} onRow={(index) => choose(rows[index])} /></div>
-      <aside className="card rail">{selected ? <div className="stack"><h2>Edit template</h2><label>Title<input value={draftTemplate.subject} onChange={(event) => setDraftTemplate({ ...draftTemplate, subject: event.target.value })} /></label><label>Message<textarea value={draftTemplate.body} onChange={(event) => setDraftTemplate({ ...draftTemplate, body: event.target.value })} /></label><div className="phone"><small>PlaceIn · now</small><div className="card"><b>{draftTemplate.subject}</b><p>{draftTemplate.body}</p></div></div><button className="btn gold" onClick={() => saveTemplate().catch((error) => notify(error.message))}>Save template</button></div> : <p>Select a template to edit the title, body and mobile preview.</p>}</aside></div>}</Gate>}
+      <aside className="card rail">{selected ? <div className="stack"><h2>Edit template</h2><label>Title<input value={draftTemplate.subject} onChange={(event) => setDraftTemplate({ ...draftTemplate, subject: event.target.value })} /></label><label>Message<textarea value={draftTemplate.body} onChange={(event) => setDraftTemplate({ ...draftTemplate, body: event.target.value })} /></label><div className="phone"><small>PlaceIn · now</small><div className="card"><b>{draftTemplate.subject}</b><p>{draftTemplate.body}</p></div></div><button className="btn gold" onClick={() => saveTemplate().catch((error) => notify(error.message))}>Save template</button></div> : <div className="empty"><span className="empty-ico"><Icons.Inbox size={24} /></span><small>Select a template to edit the title, body and mobile preview.</small></div>}</aside></div>}</Gate>}
     {tab === "Announcements" && <section className="card panel stack"><h2>Announcement draft</h2><label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label><label>Message<textarea value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} /></label><div className="filters"><Select value={form.channel} set={(channel) => setForm({ ...form, channel })} options={["EMAIL", "PUSH", "IN_APP"]} /><input value={form.audience} onChange={(event) => setForm({ ...form, audience: event.target.value })} /><button className="btn gold" onClick={() => draft().catch((error) => notify(error.message))}>Preview message</button></div>{preview && <div className="notice"><b>{preview.subject}</b><p>{preview.body}</p><small>{preview.disclaimer}</small></div>}<Note>Review the announcement before sending. Eligible people still follow their own notification preferences.</Note></section>}
     {tab === "Delivery log" && <Gate state={announcements}>{(data) => <Table columns={["Message", "Channel", "Audience", "Status", "Delivered", "Failed", ""]} rows={data.data.map((row: any) => [row.title, pretty(row.channel), row.audience, <Badge key={row.id} status={row.status}>{pretty(row.status)}</Badge>, row.delivered, row.failed, row.status === "SENT" ? "Sent" : <button key="s" className="btn outline sm" onClick={() => send(row.id).catch((error) => notify(error.message))}>Send</button>])} />}</Gate>}</>;
 }
@@ -1335,7 +1387,7 @@ function Health({ notify }: { notify: (s: string) => void }) {
         <Metrics><Stat icon="CircleCheck" title="Service availability" value={`${data.availability}%`} note="From the service list" tone="green" /><Stat icon="TriangleAlert" title="App errors" value={data.appErrors} note="Recorded occurrences" tone="red" /><Stat icon="CloudUpload" title="Failed uploads" value={data.failedUploads} note="Current queue" tone="orange" /><Stat icon="HeartPulse" title="Open incidents" value={data.openIncidents} note="Not resolved" /></Metrics>
         {incident && <div className="banner">{incident.summary} — {incident.symptom}</div>}
         <div className="split"><section className="card panel"><h2>Service status</h2><Table columns={["Service", "Status", "Response / queue", "Updated"]} rows={data.services.map((row: any) => [row.name, <Badge key={row.id} status={row.status}>{pretty(row.status)}</Badge>, row.detail, when(row.updatedAt)])} /></section>
-          <aside className="card panel incident">{incident ? <><h2>Active technical incident</h2><div className="panel-head"><b>{incident.reference} · {incident.summary}</b><span className="inline-actions"><Badge status={incident.status}>{pretty(incident.status)}</Badge><Badge status={incident.severity}>{pretty(incident.severity)}</Badge></span></div><div className="kv"><span>Assigned to</span><b>{incident.assignee || "—"}</b><span>Started</span><b>{when(incident.openedAt)}</b><span>Support ticket</span><b>{incident.ticketNumber || "—"}</b><span>Upload</span><b>{incident.uploadReference || "—"}</b><span>Symptom</span><b>{incident.symptom}</b><span>Impact</span><b>{incident.impact}</b></div></> : <p>No open incident.</p>}</aside></div>
+          <aside className="card panel incident">{incident ? <><h2>Active technical incident</h2><div className="panel-head"><b>{incident.reference} · {incident.summary}</b><span className="inline-actions"><Badge status={incident.status}>{pretty(incident.status)}</Badge><Badge status={incident.severity}>{pretty(incident.severity)}</Badge></span></div><div className="kv"><span>Assigned to</span><b>{incident.assignee || "—"}</b><span>Started</span><b>{when(incident.openedAt)}</b><span>Support ticket</span><b>{incident.ticketNumber || "—"}</b><span>Upload</span><b>{incident.uploadReference || "—"}</b><span>Symptom</span><b>{incident.symptom}</b><span>Impact</span><b>{incident.impact}</b></div></> : <div className="empty"><span className="empty-ico"><Icons.Inbox size={24} /></span><small>No open incident.</small></div>}</aside></div>
         <div className="grid three"><section className="card panel"><h2>Recent app errors</h2><Table columns={["Reference", "Platform", "Category", "Count"]} rows={data.errors.map((row: any) => [row.reference, `${row.platform} ${row.appVersion}`, row.category, row.occurrences])} /></section>
           <section className="card panel"><h2>Upload and processing</h2><p className="muted">{data.uploads.length} shown · {failed} failed · {processing} processing</p>{data.uploads.map((row: any) => <div className="list-row" key={row.id}><span className="stack-name"><b>{row.reference}</b><small>{row.detail}</small></span><Badge status={row.status}>{pretty(row.status)}</Badge>{row.progress > 0 && <span className="progress" style={{ width: 80 }}><i style={{ width: `${row.progress}%` }} /></span>}{row.retryEligible && <button className="btn outline sm" onClick={() => retry(row.id).catch((error) => notify(error.message))}>Retry</button>}</div>)}</section>
           <section className="card panel"><h2>Backups and recovery</h2>{data.backups.map((row: any) => <div className="list-row" key={row.id}><b>{row.label}</b><Badge status={row.ok ? "ACTIVE" : "FAILED"}>{row.value}</Badge></div>)}</section></div>

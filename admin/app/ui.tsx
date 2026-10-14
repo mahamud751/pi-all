@@ -1,9 +1,9 @@
 "use client";
 
-import * as Icons from "lucide-react";
+import { Icons } from "./icons";
 
 export function Icon({ name, size = 18 }: { name: string; size?: number }) {
-  const Comp = (Icons as unknown as Record<string, React.ElementType>)[name] || Icons.Circle;
+  const Comp = (Icons as Record<string, React.ElementType>)[name] || Icons.Circle;
   return <Comp size={size} />;
 }
 
@@ -63,7 +63,7 @@ export function Badge({ children, status }: { children: React.ReactNode; status?
 }
 
 export function Page({ code, title, sub, actions, crumb }: { code?: string; title: string; sub?: string; actions?: React.ReactNode; crumb?: React.ReactNode }) {
-  return <div className="page-head"><div>{crumb}{code && <div className="crumb">{code}</div>}<h1>{title}</h1>{sub && <p>{sub}</p>}</div><div className="page-actions">{actions}</div></div>;
+  return <div className="page-head"><div>{crumb}{code && <div className="code-chip">SCREEN {code}</div>}<h1>{title}</h1>{sub && <p>{sub}</p>}</div><div className="page-actions">{actions}</div></div>;
 }
 
 export function Metric({ icon, title, value, note, tone = "blue" }: { icon: string; title: string; value: React.ReactNode; note?: string; tone?: string }) {
@@ -87,13 +87,13 @@ export function Seg({ items, value, onChange }: { items: { id: string; label: st
 }
 
 export function Pager({ data, page, setPage }: { data: any; page: number; setPage: (n: number) => void }) {
-  if (!data?.pageCount || data.pageCount <= 1) return <div className="pager"><span>{data?.total ?? 0} records</span></div>;
-  return <div className="pager"><span>Showing page {data.page} of {data.pageCount} · {data.total} records</span><button className="btn outline sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</button><span>{data.page}</span><button className="btn outline sm" disabled={page >= data.pageCount} onClick={() => setPage(page + 1)}>Next</button></div>;
+  if (!data?.pageCount || data.pageCount <= 1) return <div className="pager"><span>{(data?.total ?? 0).toLocaleString()} records</span></div>;
+  return <div className="pager"><span>Page {data.page} of {data.pageCount} · {Number(data.total).toLocaleString()} records</span><button className="btn outline sm" disabled={page <= 1} onClick={() => setPage(page - 1)}><Icons.ChevronLeft size={14} /> Previous</button><span className="page-num">{data.page}</span><button className="btn outline sm" disabled={page >= data.pageCount} onClick={() => setPage(page + 1)}>Next <Icons.ChevronRight size={14} /></button></div>;
 }
 
 export function Table({ columns, rows, onRow, active }: { columns: string[]; rows: React.ReactNode[][]; onRow?: (index: number) => void; active?: number }) {
   return <div className="card" style={{ overflowX: "auto" }}><table><thead><tr>{columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>
-    {rows.length === 0 && <tr><td colSpan={columns.length}>No records match these filters.</td></tr>}
+    {rows.length === 0 && <tr><td colSpan={columns.length}><div className="empty"><span className="empty-ico"><Icons.Inbox size={24} /></span><b>No records found</b><small>Nothing matches these filters yet.</small></div></td></tr>}
     {rows.map((row, index) => <tr key={index} className={`${onRow ? "clickable" : ""} ${active === index ? "on" : ""}`} onClick={() => onRow?.(index)}>{row.map((cell, cellIndex) => <td key={cellIndex}>{cell}</td>)}</tr>)}
   </tbody></table></div>;
 }
@@ -103,13 +103,16 @@ export function Select({ value, set, options, labels }: { value: string; set: (v
 }
 
 export function Bars({ series, field = "views" }: { series: any[]; field?: string }) {
-  const max = Math.max(1, ...series.map((point) => Number(point[field] || point.views || point.enquiries || 0)));
-  return <div><div className="bars">{series.map((point) => <i key={point.date} title={`${point.date}: ${point[field] || point.views || point.enquiries || 0}`} style={{ height: `${Math.max(8, ((point[field] || point.views || point.enquiries || 0) / max) * 100)}%` }} />)}</div><div className="axis"><span>{series[0]?.date?.slice(5)}</span><span>{series[series.length - 1]?.date?.slice(5)}</span></div></div>;
+  const value = (point: any) => Number(point[field] || point.views || point.enquiries || 0);
+  const max = Math.max(1, ...series.map(value));
+  const total = series.reduce((sum, point) => sum + value(point), 0);
+  const label = (date?: string) => date ? new Date(date).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+  return <div className="chart"><div className="chart-summary"><strong>{total.toLocaleString()}</strong><span>total across {series.length} days · peak {max.toLocaleString()}</span></div><div className="bars">{series.map((point, index) => <i key={point.date} style={{ height: `${Math.max(4, (value(point) / max) * 100)}%`, animationDelay: `${index * 0.02}s` }}><em>{value(point).toLocaleString()}<small>{label(point.date)}</small></em></i>)}</div><div className="axis"><span>{label(series[0]?.date)}</span><span>{label(series[Math.floor(series.length / 2)]?.date)}</span><span>{label(series[series.length - 1]?.date)}</span></div></div>;
 }
 
 export function Gate({ state, children }: { state: { loading: boolean; error: string; data: any }; children: (data: any) => React.ReactNode }) {
-  if (state.loading) return <section className="card panel">Loading records…</section>;
+  if (state.loading) return <div className="skeleton" aria-busy="true" aria-label="Loading records"><div className="sk title-sk" /><div className="sk-row"><div className="sk stat-sk" /><div className="sk stat-sk" /><div className="sk stat-sk" /><div className="sk stat-sk" /></div><div className="sk block-sk" /></div>;
   if (state.error) return <div className="error-box">{state.error}</div>;
-  if (!state.data) return <section className="card panel empty">Nothing to show yet.</section>;
+  if (!state.data) return <section className="card panel empty"><span className="empty-ico"><Icons.Inbox size={24} /></span>Nothing to show yet.</section>;
   return <>{children(state.data)}</>;
 }
