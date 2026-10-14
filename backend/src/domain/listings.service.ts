@@ -22,11 +22,12 @@ export class ListingsService {
     return photos.some((photo) => photo.quality === "TOO_SMALL") ? "FAIL" : "PASS";
   }
 
-  async properties(user: AuthUser, query: PageQuery & { status?: string; publication?: string; listingType?: string; agencyId?: string; agentId?: string }) {
+  async properties(user: AuthUser, query: PageQuery & { status?: string; publication?: string; listingType?: string; agencyId?: string; agentId?: string; projectId?: string }) {
     const agencyId = this.access.agencyId(user, query.agencyId);
     const { page, pageSize, skip, take } = paging(query.page, query.pageSize);
     const where: any = {
       agencyId, status: query.status || undefined, publication: query.publication || undefined, listingType: query.listingType || undefined, agentId: query.agentId || undefined,
+      projectId: query.projectId || undefined,
     };
     if (query.country && query.country !== "All countries") {
       const country = await this.prisma.country.findFirst({
@@ -38,14 +39,23 @@ export class ListingsService {
       const search = [{ title: contains(query.q) }, { reference: contains(query.q) }, { city: contains(query.q) }, { area: contains(query.q) }];
       where.AND = [{ OR: search }];
     }
-    const [total, rows] = await Promise.all([
+    // Tab counts use every filter except the status/publication tab itself.
+    const base = { ...where, status: undefined, publication: undefined };
+    const [total, rows, byPublication, byStatus] = await Promise.all([
       this.prisma.property.count({ where }),
       this.prisma.property.findMany({
         where, skip, take, orderBy: { updatedAt: "desc" },
         include: { agency: true, agent: true, project: true },
       }),
+      this.prisma.property.groupBy({ by: ["publication"], where: base, _count: { _all: true } }),
+      this.prisma.property.groupBy({ by: ["status"], where: base, _count: { _all: true } }),
     ]);
-    return result(rows.map((row) => this.card(row)), total, page, pageSize);
+    const counts = {
+      all: byPublication.reduce((sum, row) => sum + row._count._all, 0),
+      publication: Object.fromEntries(byPublication.map((row) => [row.publication, row._count._all])),
+      status: Object.fromEntries(byStatus.map((row) => [row.status, row._count._all])),
+    };
+    return { ...result(rows.map((row) => this.card(row)), total, page, pageSize), counts };
   }
 
   card(row: any) {

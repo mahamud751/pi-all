@@ -86,15 +86,22 @@ export function Seg({ items, value, onChange }: { items: { id: string; label: st
   return <div className="seg">{items.map((item) => <button key={item.id} className={value === item.id ? "on" : ""} onClick={() => onChange(item.id)}>{item.label}</button>)}</div>;
 }
 
-export function Pager({ data, page, setPage }: { data: any; page: number; setPage: (n: number) => void }) {
-  if (!data?.pageCount || data.pageCount <= 1) return <div className="pager"><span>{(data?.total ?? 0).toLocaleString()} records</span></div>;
-  return <div className="pager"><span>Page {data.page} of {data.pageCount} · {Number(data.total).toLocaleString()} records</span><button className="btn outline sm" disabled={page <= 1} onClick={() => setPage(page - 1)}><Icons.ChevronLeft size={14} /> Previous</button><span className="page-num">{data.page}</span><button className="btn outline sm" disabled={page >= data.pageCount} onClick={() => setPage(page + 1)}>Next <Icons.ChevronRight size={14} /></button></div>;
+export function Pager({ data, page, setPage, pageSize, setPageSize }: { data: any; page: number; setPage: (n: number) => void; pageSize?: number; setPageSize?: (n: number) => void }) {
+  const sizer = setPageSize && <label className="page-size">Rows<select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1); }}>{[10, 20, 50, 100].map((size) => <option key={size} value={size}>{size}</option>)}</select></label>;
+  const from = data?.total ? (data.page - 1) * data.pageSize + 1 : 0;
+  const to = data?.total ? Math.min(data.total, data.page * data.pageSize) : 0;
+  if (!data?.pageCount || data.pageCount <= 1) return <div className="pager"><span>{(data?.total ?? 0).toLocaleString()} records</span>{sizer}</div>;
+  return <div className="pager"><span>Showing {from}–{to} of {Number(data.total).toLocaleString()}</span>{sizer}<button className="btn outline sm" disabled={page <= 1} onClick={() => setPage(page - 1)}><Icons.ChevronLeft size={14} /> Previous</button><span className="page-num">{data.page}</span><button className="btn outline sm" disabled={page >= data.pageCount} onClick={() => setPage(page + 1)}>Next <Icons.ChevronRight size={14} /></button></div>;
 }
 
-export function Table({ columns, rows, onRow, active }: { columns: string[]; rows: React.ReactNode[][]; onRow?: (index: number) => void; active?: number }) {
-  return <div className="card" style={{ overflowX: "auto" }}><table><thead><tr>{columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>
-    {rows.length === 0 && <tr><td colSpan={columns.length}><div className="empty"><span className="empty-ico"><Icons.Inbox size={24} /></span><b>No records found</b><small>Nothing matches these filters yet.</small></div></td></tr>}
-    {rows.map((row, index) => <tr key={index} className={`${onRow ? "clickable" : ""} ${active === index ? "on" : ""}`} onClick={() => onRow?.(index)}>{row.map((cell, cellIndex) => <td key={cellIndex}>{cell}</td>)}</tr>)}
+export function Table({ columns, rows, onRow, active, selected, onSelect }: { columns: string[]; rows: React.ReactNode[][]; onRow?: (index: number) => void; active?: number; selected?: number[]; onSelect?: (next: number[]) => void }) {
+  const picking = Boolean(onSelect);
+  const chosen = selected || [];
+  const all = rows.length > 0 && chosen.length === rows.length;
+  const toggle = (index: number) => onSelect?.(chosen.includes(index) ? chosen.filter((value) => value !== index) : [...chosen, index]);
+  return <div className="card" style={{ overflowX: "auto" }}><table><thead><tr>{picking && <th className="pick"><input type="checkbox" aria-label="Select all rows" checked={all} ref={(node) => { if (node) node.indeterminate = chosen.length > 0 && !all; }} onChange={() => onSelect?.(all ? [] : rows.map((_, index) => index))} /></th>}{columns.map((column, index) => <th key={`${column}-${index}`}>{column}</th>)}</tr></thead><tbody>
+    {rows.length === 0 && <tr><td colSpan={columns.length + (picking ? 1 : 0)}><div className="empty"><span className="empty-ico"><Icons.Inbox size={24} /></span><b>No records found</b><small>Nothing matches these filters yet.</small></div></td></tr>}
+    {rows.map((row, index) => <tr key={index} className={`${onRow ? "clickable" : ""} ${active === index ? "on" : ""} ${chosen.includes(index) ? "picked" : ""}`} onClick={() => onRow?.(index)}>{picking && <td className="pick" onClick={(event) => event.stopPropagation()}><input type="checkbox" aria-label="Select row" checked={chosen.includes(index)} onChange={() => toggle(index)} /></td>}{row.map((cell, cellIndex) => <td key={cellIndex}>{cell}</td>)}</tr>)}
   </tbody></table></div>;
 }
 

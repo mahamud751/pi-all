@@ -166,7 +166,7 @@ export default function Console({ children }: { children: React.ReactNode }) {
   const [notice, setNotice] = useState("");
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<any>(null);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<"light" | "dark" | null>(null);
   const [navOpen, setNavOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -177,6 +177,7 @@ export default function Console({ children }: { children: React.ReactNode }) {
     setTheme(saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light");
   }, []);
   useEffect(() => {
+    if (!theme) return;
     document.documentElement.dataset.theme = theme;
     try { localStorage.setItem("placein-theme", theme); } catch {}
   }, [theme]);
@@ -350,43 +351,84 @@ function Series({ series, label }: { series: any[]; label: string }) {
   return <section className="card panel"><h2>{label}</h2><Bars series={series} /></section>;
 }
 
-function Properties({ go, countryQuery, session }: { go: Go; countryQuery: string; session: Session }) {
+function Properties({ go, countryQuery, session, notify }: { go: Go; countryQuery: string; session: Session; notify: (s: string) => void }) {
   const staff = session.user.kind === "staff";
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [publication, setPublication] = useState("");
   const [listingType, setListingType] = useState("");
+  const [projectId, setProjectId] = useState("");
+  const [agentId, setAgentId] = useState("");
   const [picked, setPicked] = useState(0);
-  const path = `/api/properties?page=${page}&pageSize=8&q=${encodeURIComponent(q)}&status=${status}&publication=${publication}&listingType=${listingType}${countryQuery ? `&${countryQuery}` : ""}`;
+  const [selected, setSelected] = useState<number[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [counts, setCounts] = useState<any>(null);
+  const projects = useQuery("/api/projects?pageSize=100");
+  const agents = useQuery("/api/agents?pageSize=100");
+  const path = `/api/properties?page=${page}&pageSize=${pageSize}&q=${encodeURIComponent(q)}&status=${status}&publication=${publication}&listingType=${listingType}&projectId=${projectId}&agentId=${agentId}${countryQuery ? `&${countryQuery}` : ""}`;
   const state = useQuery(path);
-  const tabs = [["", "All"], ["LIVE", "Live"], ["DRAFT", "Draft"], ["PENDING_REVIEW", "Pending approval"], ["CHANGES_REQUESTED", "Needs changes"], ["SOLD", "Sold"], ["LET", "Let"]];
+  useEffect(() => { if (state.data?.counts) setCounts(state.data.counts); }, [state.data]);
+  useEffect(() => { setSelected([]); }, [path]);
+  const filtered = Boolean(q || listingType || projectId || agentId || (staff && (status || publication)));
+  function reset<T>(setter: (value: T) => void) { return (value: T) => { setter(value); setPage(1); }; }
+  function clearFilters() { setQ(""); setListingType(""); setProjectId(""); setAgentId(""); if (staff) { setStatus(""); setPublication(""); } setPage(1); }
+  const tabs: [string, string][] = [["", "All"], ["LIVE", "Live"], ["DRAFT", "Draft"], ["PENDING_REVIEW", "Pending approval"], ["CHANGES_REQUESTED", "Needs changes"], ["SOLD", "Sold"], ["LET", "Let"]];
+  const outcomeTab = (id: string) => id === "SOLD" || id === "LET";
+  const tabCount = (id: string) => counts ? (id === "" ? counts.all : outcomeTab(id) ? counts.status?.[id] : counts.publication?.[id]) || 0 : null;
+  const rowsOf = () => (state.data?.data || []) as any[];
+  const chosenRows = () => selected.map((index) => rowsOf()[index]).filter(Boolean);
+  function exportSelected() {
+    const cell = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+    const lines = [["Reference", "Title", "Agency", "Agent", "Project", "Price", "Currency", "Status", "Publication"].join(","), ...chosenRows().map((row) => [row.reference, row.title, row.agency?.name, row.agent?.name, row.project?.name, row.price, row.currency, row.status, row.publication].map(cell).join(","))];
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" }));
+    link.download = `properties-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+  async function bulkPublication(next: "LIVE" | "UNPUBLISHED") {
+    const rows = chosenRows().filter((row) => row.publication !== next);
+    if (!rows.length) { notify(`Every selected listing is already ${next === "LIVE" ? "live" : "unpublished"}.`); return; }
+    setBusy(true);
+    const results = await Promise.allSettled(rows.map((row) => api(`/api/properties/${row.id}/publication`, { method: "POST", body: { publication: next, reason: "Bulk update from the properties directory." } })));
+    setBusy(false);
+    const failed = results.filter((result) => result.status === "rejected") as PromiseRejectedResult[];
+    notify(failed.length ? `${rows.length - failed.length} updated, ${failed.length} not changed: ${failed[0].reason?.message || "request failed"}` : `${rows.length} listing${rows.length === 1 ? "" : "s"} ${next === "LIVE" ? "published" : "unpublished"}.`);
+    setSelected([]);
+    state.reload();
+  }
+  const statusBadge = (row: any) => <Badge key="s" status={row.publication === "LIVE" ? "LIVE" : row.publication === "DRAFT" ? "DRAFT" : row.status}>{pretty(row.publication === "LIVE" ? "Live" : row.publication === "CHANGES_REQUESTED" ? "Needs changes" : row.publication === "PENDING_REVIEW" ? "Pending approval" : row.status)}</Badge>;
+  const bulkBar = selected.length > 0 && <div className="bulk-bar"><b>{selected.length} selected</b><button className="btn ghost sm" onClick={() => setSelected([])}>Clear</button><span /><button className="btn outline sm" onClick={exportSelected}><Icons.Download size={14} /> Export CSV</button><button className="btn outline sm" disabled={busy} onClick={() => bulkPublication("UNPUBLISHED")}>Unpublish</button><button className="btn gold sm" disabled={busy} onClick={() => bulkPublication("LIVE")}>{busy ? "Updating…" : "Publish"}</button></div>;
   return <><Head code={staff ? "06 / 24" : undefined} title={staff ? "Properties directory" : "Properties"} sub={staff ? "All agency listings across PlaceIn. Publication and outcome are tracked separately." : "Manage all your property listings. Add, edit and track the status of your properties."}>
     {staff && <button className="btn outline" onClick={() => go("approvals")}><Icons.Flag size={16} /> Review flagged</button>}
     <button className="btn gold" onClick={() => staff ? downloadCsv("properties").catch((error) => alert(error.message)) : go("wizard")}>{staff ? <><Icons.Download size={16} /> Export</> : <><Icons.Plus size={16} /> Add property</>}</button>
   </Head>
-    <section className="card panel" style={{ marginBottom: 12 }}><div className="filters" style={{ margin: 0 }}>
-      <input value={q} placeholder="Search by reference, title or location" onChange={(event) => { setQ(event.target.value); setPage(1); }} />
-      <Select value={listingType} set={(value) => { setListingType(value); setPage(1); }} options={["", "SALE", "RENT"]} labels={["Sale or rent", "Sale", "Rent"]} />
-      {staff && <Select value={publication} set={(value) => { setPublication(value); setPage(1); }} options={["", "DRAFT", "PENDING_REVIEW", "CHANGES_REQUESTED", "LIVE", "UNPUBLISHED", "REJECTED"]} labels={["Publication", "Draft", "Pending review", "Needs changes", "Published", "Unpublished", "Rejected"]} />}
-      <Select value={status} set={(value) => { setStatus(value); setPage(1); }} options={["", "AVAILABLE", "UNDER_OFFER", "SOLD", "LET", "WITHDRAWN", "EXPIRED"]} labels={["Property status", "Available", "Under offer", "Sold", "Let", "Withdrawn", "Expired"]} />
-    </div></section>
-    {!staff && <div className="seg">{tabs.map(([id, label]) => <button key={label} className={(id === "SOLD" || id === "LET" ? status === id : publication === id) ? "on" : ""} onClick={() => { if (id === "SOLD" || id === "LET") { setStatus(id); setPublication(""); } else { setPublication(id); setStatus(""); } setPage(1); }}>{label}</button>)}</div>}
+    {!staff && <div className="seg">{tabs.map(([id, label]) => <button key={label} className={(outcomeTab(id) ? status === id : publication === id && !outcomeTab(status)) ? "on" : ""} onClick={() => { if (outcomeTab(id)) { setStatus(id); setPublication(""); } else { setPublication(id); setStatus(""); } setPage(1); }}>{label}{tabCount(id) !== null && <em>{tabCount(id)}</em>}</button>)}</div>}
+    <div className="filters toolbar">
+      <input value={q} placeholder="Search by reference, title or location" onChange={(event) => reset(setQ)(event.target.value)} />
+      <select value={projectId} onChange={(event) => reset(setProjectId)(event.target.value)}><option value="">All projects</option>{(projects.data?.data || []).map((row: any) => <option key={row.id} value={row.id}>{row.name}</option>)}</select>
+      <select value={agentId} onChange={(event) => reset(setAgentId)(event.target.value)}><option value="">All agents</option>{(agents.data?.data || []).map((row: any) => <option key={row.id} value={row.id}>{row.name}{staff && row.agency?.name ? ` · ${row.agency.name}` : ""}</option>)}</select>
+      <Select value={listingType} set={reset(setListingType)} options={["", "SALE", "RENT"]} labels={["Sale or rent", "Sale", "Rent"]} />
+      {staff && <Select value={publication} set={reset(setPublication)} options={["", "DRAFT", "PENDING_REVIEW", "CHANGES_REQUESTED", "LIVE", "UNPUBLISHED", "REJECTED"]} labels={["Publication", "Draft", "Pending review", "Needs changes", "Published", "Unpublished", "Rejected"]} />}
+      {staff && <Select value={status} set={reset(setStatus)} options={["", "AVAILABLE", "UNDER_OFFER", "SOLD", "LET", "WITHDRAWN", "EXPIRED"]} labels={["Property status", "Available", "Under offer", "Sold", "Let", "Withdrawn", "Expired"]} />}
+      {filtered && <button className="btn ghost sm" onClick={clearFilters}><Icons.CircleX size={14} /> Clear filters</button>}
+    </div>
     <Gate state={state}>{(data) => {
       const current = data.data[picked] || data.data[0];
-      return staff ? <div className="split"><div><Table active={picked} columns={["Property", "Agency / agent", "Country", "Sale / rent", "Status", "Publication", "Quality", ""]} rows={data.data.map((row: any) => [
-        <div className="who" key={row.id}><Thumb url={row.coverUrl} /><p><b>{row.title}</b><small>{row.reference} · {money(row.price, row.currency)}</small></p></div>,
+      return staff ? <div className="split"><div>{bulkBar}<Table active={picked} selected={selected} onSelect={setSelected} columns={["Property", "Agency / agent", "Country", "Status", "Publication", "Quality"]} rows={data.data.map((row: any) => [
+        <div className="who" key={row.id}><Thumb url={row.coverUrl} /><p><b>{row.title}</b><small>{row.reference} · {row.listingType === "RENT" ? "Rent" : "Sale"} · {money(row.price, row.currency)}</small></p></div>,
         <span key="a" className="stack-name"><b>{row.agency?.name}</b><small>{row.agent?.name || "Unassigned"}</small></span>,
-        row.countryName, pretty(row.listingType), <Badge key="s" status={row.status}>{pretty(row.status)}</Badge>, <Badge key="p" status={row.publication}>{pretty(row.publication)}</Badge>, <Badge key="q" status={row.mediaQuality === "PASS" || row.mediaQuality === "READY" ? "PASS" : "FAILED"}>{pretty(row.mediaQuality)}</Badge>,
-        <button key="v" className="btn outline sm">View</button>,
-      ])} onRow={setPicked} /><Pager data={data} page={page} setPage={setPage} /></div>
+        row.countryName, <Badge key="s" status={row.status}>{pretty(row.status)}</Badge>, <Badge key="p" status={row.publication}>{pretty(row.publication)}</Badge>, <Badge key="q" status={row.mediaQuality === "PASS" || row.mediaQuality === "READY" ? "PASS" : "FAILED"}>{pretty(row.mediaQuality)}</Badge>,
+      ])} onRow={setPicked} /><Pager data={data} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} /></div>
         {current && <aside className="card rail"><div className="project-img" style={{ backgroundImage: `url(${current.coverUrl})`, borderRadius: 12 }}><Badge status={current.status}>{pretty(current.status)}</Badge><Badge status={current.publication}>{pretty(current.publication)}</Badge></div><h2>{current.title}</h2><p className="muted">{current.reference}</p><div className="kv"><span>Agency</span><b>{current.agency?.name}</b><span>Agent</span><b>{current.agent?.name || "Unassigned"}</b><span>Location</span><b>{current.area}, {current.city}</b><span>Views</span><b>{current.views}</b><span>Saves</span><b>{current.saves}</b></div><button className="btn gold" onClick={() => go("property", current.id)}>Open property</button></aside>}
-      </div> : <><Table columns={["Property", "Reference", "Project", "Agent", "Price", "Status", "Updated", ""]} rows={data.data.map((row: any) => [
-        <div className="who" key={row.id}><Thumb url={row.coverUrl} /><p><b>{row.title}</b><small>{row.beds} beds · {row.baths} baths · {Number(row.sizeSqft || 0).toLocaleString()} sq ft</small></p></div>,
-        row.reference, row.project?.name || "—", <Who key="ag" name={row.agent?.name || "Unassigned"} />, money(row.price, row.currency),
-        <Badge key="s" status={row.publication === "LIVE" ? "LIVE" : row.publication === "DRAFT" ? "DRAFT" : row.status}>{pretty(row.publication === "LIVE" ? "Live" : row.publication === "CHANGES_REQUESTED" ? "Needs changes" : row.publication === "PENDING_REVIEW" ? "Pending approval" : row.status)}</Badge>,
-        day(row.uploadedAt), <span key="act" className="inline-actions"><button className="btn outline sm" onClick={(event) => { event.stopPropagation(); go("property", row.id); }}>View</button><button className="btn gold sm" onClick={(event) => { event.stopPropagation(); go("property", row.id); }}>Edit</button></span>,
-      ])} onRow={(index) => go("property", data.data[index].id)} /><Pager data={data} page={page} setPage={setPage} /></>;
+      </div> : <>{bulkBar}<Table selected={selected} onSelect={setSelected} columns={["Property", "Project", "Agent", "Price", "Status", "Updated", ""]} rows={data.data.map((row: any) => [
+        <div className="who" key={row.id}><Thumb url={row.coverUrl} /><p><b>{row.title}</b><small>{row.reference} · {row.beds} bd · {row.baths} ba · {Number(row.sizeSqft || 0).toLocaleString()} sq ft</small></p></div>,
+        <span key="pj" className="num">{row.project?.name || "—"}</span>, <Who key="ag" name={row.agent?.name || "Unassigned"} />, <b key="pr" className="num">{money(row.price, row.currency)}</b>,
+        statusBadge(row), <span key="up" className="num muted">{day(row.uploadedAt)}</span>,
+        <span key="act" className="row-actions"><button className="btn outline sm" onClick={(event) => { event.stopPropagation(); go("property", row.id); }}>View</button><button className="btn outline sm icon-only" title="Edit property" aria-label={`Edit ${row.title}`} onClick={(event) => { event.stopPropagation(); go("property", row.id); }}><Icons.Pencil size={13} /></button></span>,
+      ])} onRow={(index) => go("property", data.data[index].id)} /><Pager data={data} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} /></>;
     }}</Gate></>;
 }
 

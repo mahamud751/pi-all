@@ -36,6 +36,9 @@ export class PageQuery {
   agentId?: string;
 
   @ApiPropertyOptional() @IsOptional() @IsString()
+  projectId?: string;
+
+  @ApiPropertyOptional() @IsOptional() @IsString()
   channel?: string;
 
   @ApiPropertyOptional() @IsOptional() @IsString()
