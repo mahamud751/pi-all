@@ -1,0 +1,1184 @@
+[
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/auth/me",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/dashboard/office",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/dashboard/agency",
+    "status": 403
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/agencies",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/agents",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/properties",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/projects",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/reels",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/enquiries",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/offers",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/appointments",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/outcomes",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/moderation",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/users",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/subscriptions",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/invoices",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/tickets",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/staff",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/platform/settings",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/platform/countries",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/platform/analytics",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/platform/templates",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/platform/announcements",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/platform/health",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/platform/audit",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/platform/search",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "api",
+    "path": "/api/plans",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "detail",
+    "path": "/api/agencies/cmv5o708s0029qc248bxctv10",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "detail",
+    "path": "/api/agents/cmv5l0mz7000yqc9e2w9dl5xy",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "detail",
+    "path": "/api/properties/cmv5ni0zx001vqc248waw22de",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "detail",
+    "path": "/api/projects/cmv5l0mzz001mqc9ed3fl519x",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "detail",
+    "path": "/api/users/cmv5l0n2l003rqc9edkb2200z",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "detail",
+    "path": "/api/tickets/cmv5l0n5k006eqc9etjtit4rm",
+    "status": 200
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "dashboard",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "agencies",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "agents",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "properties",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "outcomes",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "reels",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "approvals",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "users",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "offers",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "enquiries",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "appointments",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "analytics",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "countries",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "subscriptions",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "invoices",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "tickets",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "staff",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "settings",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "notifications",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "health",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "audit",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "projects",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "properties/new",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser",
+    "path": "reels/upload",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser-detail",
+    "path": "agencies",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser-detail",
+    "path": "agents",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser-detail",
+    "path": "properties",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser-detail",
+    "path": "projects",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "admin",
+    "type": "browser-detail",
+    "path": "users",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/auth/me",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/dashboard/office",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/dashboard/agency",
+    "status": 403
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/agencies",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/agents",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/properties",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/projects",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/reels",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/enquiries",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/offers",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/appointments",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/outcomes",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/moderation",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/users",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/subscriptions",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/invoices",
+    "status": 403
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/tickets",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/staff",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/platform/settings",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/platform/countries",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/platform/analytics",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/platform/templates",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/platform/announcements",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/platform/health",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/platform/audit",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/platform/search",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "api",
+    "path": "/api/plans",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "detail",
+    "path": "/api/agencies/cmv5o708s0029qc248bxctv10",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "detail",
+    "path": "/api/agents/cmv5l0mz7000yqc9e2w9dl5xy",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "detail",
+    "path": "/api/properties/cmv5ni0zx001vqc248waw22de",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "detail",
+    "path": "/api/projects/cmv5l0mzz001mqc9ed3fl519x",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "detail",
+    "path": "/api/users/cmv5l0n2l003rqc9edkb2200z",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "detail",
+    "path": "/api/tickets/cmv5l0n5k006eqc9etjtit4rm",
+    "status": 200
+  },
+  {
+    "role": "support",
+    "type": "browser",
+    "path": "dashboard",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "support",
+    "type": "browser",
+    "path": "invoices",
+    "errors": [],
+    "messages": [
+      "Invoices are limited to finance staff and the agency owner."
+    ]
+  },
+  {
+    "role": "support",
+    "type": "browser",
+    "path": "tickets",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "support",
+    "type": "browser",
+    "path": "settings",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "support",
+    "type": "browser",
+    "path": "health",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/auth/me",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/dashboard/office",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/dashboard/agency",
+    "status": 403
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/agencies",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/agents",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/properties",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/projects",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/reels",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/enquiries",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/offers",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/appointments",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/outcomes",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/moderation",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/users",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/subscriptions",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/invoices",
+    "status": 403
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/tickets",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/staff",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/platform/settings",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/platform/countries",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/platform/analytics",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/platform/templates",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/platform/announcements",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/platform/health",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/platform/audit",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/platform/search",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "api",
+    "path": "/api/plans",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "detail",
+    "path": "/api/agencies/cmv5o708s0029qc248bxctv10",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "detail",
+    "path": "/api/agents/cmv5l0mz7000yqc9e2w9dl5xy",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "detail",
+    "path": "/api/properties/cmv5ni0zx001vqc248waw22de",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "detail",
+    "path": "/api/projects/cmv5l0mzz001mqc9ed3fl519x",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "detail",
+    "path": "/api/users/cmv5l0n2l003rqc9edkb2200z",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "detail",
+    "path": "/api/tickets/cmv5l0n570066qc9eaymdcfg2",
+    "status": 200
+  },
+  {
+    "role": "maintenance",
+    "type": "browser",
+    "path": "dashboard",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "maintenance",
+    "type": "browser",
+    "path": "invoices",
+    "errors": [],
+    "messages": [
+      "Invoices are limited to finance staff and the agency owner."
+    ]
+  },
+  {
+    "role": "maintenance",
+    "type": "browser",
+    "path": "tickets",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "maintenance",
+    "type": "browser",
+    "path": "settings",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "maintenance",
+    "type": "browser",
+    "path": "health",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/auth/me",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/dashboard/office",
+    "status": 403
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/dashboard/agency",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/agencies",
+    "status": 403
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/agents",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/properties",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/projects",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/reels",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/enquiries",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/offers",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/appointments",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/outcomes",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/moderation",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/users",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/subscriptions",
+    "status": 403
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/invoices",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/tickets",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/staff",
+    "status": 403
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/platform/settings",
+    "status": 403
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/platform/countries",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/platform/analytics",
+    "status": 403
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/platform/templates",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/platform/announcements",
+    "status": 403
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/platform/health",
+    "status": 403
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/platform/audit",
+    "status": 403
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/platform/search",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "api",
+    "path": "/api/plans",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "detail",
+    "path": "/api/agents/cmv5l0mz7000yqc9e2w9dl5xy",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "detail",
+    "path": "/api/properties/cmv5ni0zx001vqc248waw22de",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "detail",
+    "path": "/api/projects/cmv5l0mzz001mqc9ed3fl519x",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "detail",
+    "path": "/api/users/cmv5l0n2l003rqc9edkb2200z",
+    "status": 403
+  },
+  {
+    "role": "agency",
+    "type": "detail",
+    "path": "/api/tickets/cmv5l0n570066qc9eaymdcfg2",
+    "status": 200
+  },
+  {
+    "role": "agency",
+    "type": "browser",
+    "path": "dashboard",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "agency",
+    "type": "browser",
+    "path": "properties",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "agency",
+    "type": "browser",
+    "path": "reels",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "agency",
+    "type": "browser",
+    "path": "projects",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "agency",
+    "type": "browser",
+    "path": "enquiries",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "agency",
+    "type": "browser",
+    "path": "appointments",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "agency",
+    "type": "browser",
+    "path": "insights",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "agency",
+    "type": "browser",
+    "path": "audience",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "agency",
+    "type": "browser",
+    "path": "team",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "agency",
+    "type": "browser",
+    "path": "approvals",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "agency",
+    "type": "browser",
+    "path": "settings",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "agency",
+    "type": "browser",
+    "path": "properties/new",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "agency",
+    "type": "browser",
+    "path": "reels/upload",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "agency",
+    "type": "browser-detail",
+    "path": "agents",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "agency",
+    "type": "browser-detail",
+    "path": "properties",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "agency",
+    "type": "browser-detail",
+    "path": "projects",
+    "errors": [],
+    "messages": []
+  },
+  {
+    "role": "agency",
+    "type": "browser-detail",
+    "path": "users",
+    "errors": [],
+    "messages": []
+  }
+]

@@ -29,7 +29,10 @@ export class ListingsService {
       agencyId, status: query.status || undefined, publication: query.publication || undefined, listingType: query.listingType || undefined, agentId: query.agentId || undefined,
     };
     if (query.country && query.country !== "All countries") {
-      where.OR = [{ countryName: { equals: query.country, mode: "insensitive" } }, { countryName: { contains: query.country, mode: "insensitive" } }];
+      const country = await this.prisma.country.findFirst({
+        where: { OR: [{ code: { equals: query.country, mode: "insensitive" } }, { name: { equals: query.country, mode: "insensitive" } }] },
+      });
+      where.countryName = { equals: country?.name || query.country, mode: "insensitive" };
     }
     if (query.q) {
       const search = [{ title: contains(query.q) }, { reference: contains(query.q) }, { city: contains(query.q) }, { area: contains(query.q) }];

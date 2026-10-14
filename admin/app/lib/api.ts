@@ -24,7 +24,16 @@ export type Session = { accessToken: string; user: Profile };
 export function loadSession(): Session | null {
   if (typeof window === "undefined") return null;
   const raw = localStorage.getItem("placein-session");
-  return raw ? JSON.parse(raw) as Session : null;
+  if (!raw) return null;
+  try {
+    const session = JSON.parse(raw);
+    if (typeof session?.accessToken === "string" && session.user?.id &&
+        ["staff", "agency"].includes(session.user.kind)) return session as Session;
+  } catch {
+    // A damaged saved session should return to sign-in, not crash the app.
+  }
+  localStorage.removeItem("placein-session");
+  return null;
 }
 
 export function saveSession(session: Session | null) {

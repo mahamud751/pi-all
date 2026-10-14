@@ -13,6 +13,9 @@ export class ActivityService {
     const agencyId = this.access.agencyId(user, query.agencyId);
     const { page, pageSize, skip, take } = paging(query.page, query.pageSize);
     const where: any = { agencyId, status: query.status || undefined, channel: query.channel || undefined };
+    if (query.country && query.country !== "All countries") {
+      where.agency = { country: { OR: [{ code: { equals: query.country, mode: "insensitive" } }, { name: { equals: query.country, mode: "insensitive" } }] } };
+    }
     if (query.unassigned === "true") where.agentId = null;
     if (query.q) where.OR = [{ summary: contains(query.q) }, { freeUser: { name: contains(query.q) } }, { property: { title: contains(query.q) } }];
     const [total, rows] = await Promise.all([

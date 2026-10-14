@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Header, Param, Patch, Post, Query, Res, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Header, Param, Patch, Post, Query, Res, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { diskStorage } from "multer";
@@ -332,6 +332,7 @@ export class UploadsController {
     }),
   }))
   upload(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException("Choose a file to upload.");
     return { url: `/uploads/${file.filename}`, size: file.size, originalName: file.originalname };
   }
 }

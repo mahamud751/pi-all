@@ -25,6 +25,59 @@ export class PageQuery {
   @IsOptional() @IsString()
   country?: string;
 
+  // Keep directory filters when the global validation pipe strips unknown fields.
+  @ApiPropertyOptional() @IsOptional() @IsString()
+  status?: string;
+
+  @ApiPropertyOptional() @IsOptional() @IsString()
+  agencyId?: string;
+
+  @ApiPropertyOptional() @IsOptional() @IsString()
+  agentId?: string;
+
+  @ApiPropertyOptional() @IsOptional() @IsString()
+  channel?: string;
+
+  @ApiPropertyOptional() @IsOptional() @IsString()
+  kind?: string;
+
+  @ApiPropertyOptional() @IsOptional() @IsString()
+  outcome?: string;
+
+  @ApiPropertyOptional() @IsOptional() @IsString()
+  payment?: string;
+
+  @ApiPropertyOptional() @IsOptional() @IsString()
+  plan?: string;
+
+  @ApiPropertyOptional() @IsOptional() @IsString()
+  role?: string;
+
+  @ApiPropertyOptional() @IsOptional() @IsString()
+  verification?: string;
+
+  @ApiPropertyOptional() @IsOptional() @IsString()
+  listingType?: string;
+
+  @ApiPropertyOptional() @IsOptional() @IsString()
+  publication?: string;
+
+  @ApiPropertyOptional() @IsOptional() @IsString()
+  category?: string;
+
+  @ApiPropertyOptional() @IsOptional() @IsString()
+  decision?: string;
+
+  @ApiPropertyOptional() @IsOptional() @IsString()
+  priority?: string;
+
+  @ApiPropertyOptional() @IsOptional() @IsString()
+  queue?: string;
+
+  @ApiPropertyOptional({ enum: ["", "true", "false"] })
+  @IsOptional() @IsIn(["", "true", "false"])
+  unassigned?: string;
+
   @ApiPropertyOptional({ description: "Inclusive range start, ISO date.", example: "2026-09-01" })
   @IsOptional() @IsString()
   from?: string;
