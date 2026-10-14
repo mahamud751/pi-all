@@ -5,6 +5,7 @@ import * as bcrypt from "bcryptjs";
 import { PrismaService } from "../prisma/prisma.service";
 import { AcceptInviteDto, ForgotDto, LoginDto, ResetDto } from "../domain/dto";
 import { AuthUser } from "../common/decorators";
+import { SESSION_EXPIRES_IN, SESSION_TTL_SECONDS } from "./session.constants";
 
 @Injectable()
 export class AuthService {
@@ -45,13 +46,13 @@ export class AuthService {
 
   async issue(profile: Omit<AuthUser, "sid">, userAgent: string | undefined, staffId?: string, agencyUserId?: string) {
     const session = await this.prisma.session.create({
-      data: { staffId, agencyUserId, userAgent: userAgent || null, expiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000) },
+      data: { staffId, agencyUserId, userAgent: userAgent || null, expiresAt: new Date(Date.now() + SESSION_TTL_SECONDS * 1000) },
     });
     const user = { ...profile, sid: session.id };
     return {
       accessToken: this.jwt.sign(user),
       tokenType: "Bearer",
-      expiresIn: "12h",
+      expiresIn: SESSION_EXPIRES_IN,
       user: await this.profile(user),
     };
   }

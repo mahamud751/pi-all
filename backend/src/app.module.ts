@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { SESSION_TTL_SECONDS } from "./auth/session.constants";
 import { APP_GUARD } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
@@ -13,7 +14,7 @@ import { AuthGuard } from "./common/auth.guard";
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET || "placein-local-admin-jwt-secret",
-      signOptions: { expiresIn: "12h" },
+      signOptions: { expiresIn: SESSION_TTL_SECONDS },
     }),
     PrismaModule,
     AuthModule,
