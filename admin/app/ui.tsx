@@ -67,7 +67,7 @@ export function Page({ code, title, sub, actions, crumb }: { code?: string; titl
 }
 
 export function Metric({ icon, title, value, note, tone = "blue" }: { icon: string; title: string; value: React.ReactNode; note?: string; tone?: string }) {
-  return <div className="stat card"><div className={`stat-icon ${tone}`}><Icon name={icon} size={22} /></div><div><span>{title}</span><strong>{value}</strong>{note && <small>{note}</small>}</div></div>;
+  return <div className="stat card"><div className={`stat-icon ${tone}`}><Icon name={icon} size={22} /></div><div><span>{title}</span><strong className={typeof value === "string" && value.length > 9 && /[a-z]/i.test(value) ? "long" : undefined}>{value}</strong>{note && <small>{note}</small>}</div></div>;
 }
 
 export function Metrics({ children, cols = 4 }: { children: React.ReactNode; cols?: 3 | 4 | 5 | 6 }) {
@@ -101,7 +101,7 @@ export function Table({ columns, rows, onRow, active, selected, onSelect }: { co
   const toggle = (index: number) => onSelect?.(chosen.includes(index) ? chosen.filter((value) => value !== index) : [...chosen, index]);
   return <div className="card" style={{ overflowX: "auto" }}><table><thead><tr>{picking && <th className="pick"><input type="checkbox" aria-label="Select all rows" checked={all} ref={(node) => { if (node) node.indeterminate = chosen.length > 0 && !all; }} onChange={() => onSelect?.(all ? [] : rows.map((_, index) => index))} /></th>}{columns.map((column, index) => <th key={`${column}-${index}`}>{column}</th>)}</tr></thead><tbody>
     {rows.length === 0 && <tr><td colSpan={columns.length + (picking ? 1 : 0)}><div className="empty"><span className="empty-ico"><Icons.Inbox size={24} /></span><b>No records found</b><small>Nothing matches these filters yet.</small></div></td></tr>}
-    {rows.map((row, index) => <tr key={index} className={`${onRow ? "clickable" : ""} ${active === index ? "on" : ""} ${chosen.includes(index) ? "picked" : ""}`} onClick={() => onRow?.(index)}>{picking && <td className="pick" onClick={(event) => event.stopPropagation()}><input type="checkbox" aria-label="Select row" checked={chosen.includes(index)} onChange={() => toggle(index)} /></td>}{row.map((cell, cellIndex) => <td key={cellIndex}>{cell}</td>)}</tr>)}
+    {rows.map((row, index) => <tr key={index} className={`${onRow ? "clickable" : ""} ${active === index ? "on" : ""} ${chosen.includes(index) ? "picked" : ""}`} onClick={() => onRow?.(index)}>{picking && <td className="pick" onClick={(event) => event.stopPropagation()}><input type="checkbox" aria-label="Select row" checked={chosen.includes(index)} onChange={() => toggle(index)} /></td>}{row.map((cell, cellIndex) => <td key={cellIndex} className={typeof cell === "string" && cell.length > 42 ? "wrap" : typeof cell === "number" ? "num" : undefined}>{typeof cell === "number" ? cell.toLocaleString() : cell}</td>)}</tr>)}
   </tbody></table></div>;
 }
 

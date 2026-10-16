@@ -318,10 +318,20 @@ function Screen(props: { session: Session; view: View; go: Go; id: string; count
 }
 function Denied({ text }: { text: string }) { return <section className="card panel denied"><h1>Permission denied</h1><p>{text}</p></section>; }
 
-function OfficeHome({ go, countryQuery }: { go: Go; countryQuery: string }) {
+function greeting() {
+  const hour = new Date().getHours();
+  return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+}
+function Hero({ name, sub, code, kpis, children }: { name: string; sub: string; code?: string; kpis: [React.ReactNode, string][]; children?: React.ReactNode }) {
+  const today = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  return <section className="hero"><div><span className="hero-eyebrow"><i />{code ? `Screen ${code} · ` : ""}{today}</span><h1>{greeting()}, <span>{name.split(" ")[0]}</span></h1><p>{sub}</p>{children && <div className="hero-actions">{children}</div>}</div>
+    <div className="hero-kpis">{kpis.map(([value, label]) => <div key={label}><b>{value}</b><span>{label}</span></div>)}</div></section>;
+}
+
+function OfficeHome({ go, countryQuery, session }: { go: Go; countryQuery: string; session: Session }) {
   const state = useQuery(`/api/dashboard/office${countryQuery ? `?${countryQuery}` : ""}`);
   return <Gate state={state}>{(data) => <>
-    <Head code="01 / 24" title="Platform overview" sub={`${data.scope}. Paying agencies and free property seekers are counted separately. Updated ${when(data.updatedAt)}.`}><button className="btn outline" onClick={() => downloadCsv("agencies").catch((error) => alert(error.message))}><Icons.Download size={16} /> Export agencies</button></Head>
+    <Hero name={session.user.name} code="01 / 24" sub={`Platform overview · ${data.scope}. Paying agencies and free property seekers are counted separately. Updated ${when(data.updatedAt)}.`} kpis={data.attention.map((item: any) => [item.count, item.label])}><button className="btn gold" onClick={() => go("agencies")}><Icons.Building2 size={16} /> View agencies</button><button className="btn glass" onClick={() => downloadCsv("agencies").catch((error) => alert(error.message))}><Icons.Download size={16} /> Export agencies</button></Hero>
     <Metrics><Stat icon="Building2" title="Active agencies" value={data.agencies.active} note={`${data.agencies.joinedThisMonth} joined this month`} /><Stat icon="Users" title="Agent accounts" value={data.agents} note="Active memberships" tone="purple" /><Stat icon="House" title="Available listings" value={data.liveProperties} note="Live and available" tone="green" /><Stat icon="KeyRound" title="Reported sold or let" value={data.reportedSoldOrLet} note="This month, agency reported" tone="orange" /></Metrics>
     <Metrics><Stat icon="Download" title="Downloads" value={data.downloads.toLocaleString()} note="Store reports, not accounts" tone="blue" /><Stat icon="UserRound" title="Registered users" value={data.freeUsers.registered.toLocaleString()} note={`${data.freeUsers.newThisMonth} new this month`} tone="purple" /><Stat icon="MessageSquareText" title="Enquiries" value={data.enquiries} note={`${data.offers} offers · ${data.appointments} appointments`} tone="pink" /><Stat icon="CircleDollarSign" title="Paid invoices" value={data.finance ? `£${data.finance.paidInvoicesGbp.toLocaleString()}` : "Hidden"} note={data.finance ? "GBP reporting currency" : "Finance access required"} tone="green" /></Metrics>
     {!data.finance && <div className="banner">Subscription revenue, overdue balances and failed payments are hidden for this role.</div>}
@@ -333,10 +343,10 @@ function OfficeHome({ go, countryQuery }: { go: Go; countryQuery: string }) {
     <Table columns={["Agency", "Country", "Agents", "Status", ""]} rows={data.latestAgencies.map((row: any) => [<Who key={row.id} name={row.name} sub="Latest agency" />, row.country, row.agents, <Badge key="s" status={row.status}>{pretty(row.status)}</Badge>, <button key="v" className="btn outline sm">View</button>])} onRow={(index) => go("agency", data.latestAgencies[index].id)} />
   </>}</Gate>;
 }
-function AgencyHome({ go }: { go: Go }) {
+function AgencyHome({ go, session }: { go: Go; session: Session }) {
   const state = useQuery("/api/dashboard/agency");
   return <Gate state={state}>{(data) => <>
-    <Head title="Dashboard" sub="Today’s listings, enquiries, appointments and reel plays for your agency."><button className="btn gold" onClick={() => go("wizard")}><Icons.Plus size={16} /> Add property</button></Head>
+    <Hero name={session.user.name} sub={`Today’s listings, enquiries, appointments and reel plays for ${session.user.agencyName || "your agency"}.`} kpis={[[data.enquiriesThisMonth, "Enquiries this month"], [data.appointments.length, "Viewings today"]]}><button className="btn gold" onClick={() => go("wizard")}><Icons.Plus size={16} /> Add property</button><button className="btn glass" onClick={() => go("upload")}><Icons.Video size={16} /> Upload reel</button></Hero>
     <Metrics><Stat icon="House" title="Available properties" value={data.available} note="Live listings" tone="green" /><Stat icon="MessageSquareText" title="Open enquiries" value={data.openEnquiries} note={`${data.enquiriesThisMonth} this month`} tone="pink" /><Stat icon="CalendarCheck" title="Upcoming appointments" value={data.upcomingAppointments} note={`${data.appointments.length} today`} tone="purple" /><Stat icon="CirclePlay" title="Reel plays" value={data.reelPlays.toLocaleString()} note="Across your reels" tone="orange" /></Metrics>
     <div className="grid two"><section className="card panel"><div className="panel-head"><h2>Today’s appointments</h2><button className="btn ghost sm" onClick={() => go("appointments")}>View calendar</button></div>{data.appointments.map((row: any) => <div className="list-row" key={row.id}><b>{new Date(row.startsAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</b><Who name={row.customer} sub={row.property} /><Badge status={row.status}>{pretty(row.status)}</Badge></div>)}{!data.appointments.length && <div className="empty">No appointments today.</div>}</section>
       <section className="card panel"><h2>Quick actions</h2><div className="quick"><button onClick={() => go("wizard")}><Icons.Plus /><span>Add property</span></button><button onClick={() => go("upload")}><Icons.Video /><span>Upload reel</span></button><button onClick={() => go("team")}><Icons.UserPlus /><span>Invite agent</span></button><button onClick={() => go("projects")}><Icons.FolderPlus /><span>Projects</span></button></div></section></div>
@@ -1174,7 +1184,25 @@ function UserDetail({ id, go, notify }: { id: string; go: Go; notify: (s: string
 function Analytics({ view, countryQuery }: { view: View; countryQuery: string }) {
   const staff = view === "analytics";
   const state = useQuery(staff || view === "insights" ? (staff ? `/api/platform/analytics${countryQuery ? `?${countryQuery}` : ""}` : "/api/dashboard/agency") : "/api/reels?pageSize=20");
-  if (view === "audience") return <Gate state={state}>{(data) => <><Head title="Audience and engagement" sub="Grow your audience and see which content performs." /><Table columns={["Content", "Plays", "Watch sec", "Completion", "Likes", "Saves"]} rows={data.data.map((row: any) => [<div className="who" key={row.id}><Thumb url={row.coverUrl} /><b>{row.caption}</b></div>, row.plays, row.watchTimeSec, row.completionRate, row.likes, row.saves])} /></>}</Gate>;
+  if (view === "audience") return <Gate state={state}>{(data) => {
+    const rows = [...(data.data || [])].sort((a: any, b: any) => Number(b.plays || 0) - Number(a.plays || 0));
+    const pct = (value: any) => value == null ? null : Math.round(Number(value) <= 1 ? Number(value) * 100 : Number(value));
+    const total = (key: string) => rows.reduce((sum: number, row: any) => sum + Number(row[key] || 0), 0);
+    const rates = rows.map((row: any) => pct(row.completionRate)).filter((value): value is number => value != null);
+    const avgCompletion = rates.length ? Math.round(rates.reduce((sum, value) => sum + value, 0) / rates.length) : null;
+    const topPlays = Math.max(1, ...rows.map((row: any) => Number(row.plays || 0)));
+    return <><Head title="Audience and engagement" sub="See which reels people watch, finish and save. Ranked by plays." />
+      <Metrics><Stat icon="CirclePlay" title="Total plays" value={total("plays").toLocaleString()} note={`Across ${rows.length} reels`} /><Stat icon="Timer" title="Watch time" value={clock(total("watchTimeSec"))} note="All plays combined" tone="purple" /><Stat icon="BadgeCheck" title="Avg completion" value={avgCompletion == null ? "—" : `${avgCompletion}%`} note="Watched to the end" tone="green" /><Stat icon="Heart" title="Likes and saves" value={(total("likes") + total("saves")).toLocaleString()} note={`${total("likes").toLocaleString()} likes · ${total("saves").toLocaleString()} saves`} tone="pink" /></Metrics>
+      <Table columns={["#", "Reel", "Plays", "Watch time", "Completion", "Likes", "Saves"]} rows={rows.map((row: any, index: number) => [
+        <span key="rank" className={`rank${index < 3 ? " top" : ""}`}>{index + 1}</span>,
+        <div className="who" key={row.id}><Thumb url={row.coverUrl} /><p><b>{row.caption}</b><small>{row.property?.title || "No property"} · {row.agent?.name || row.agency?.name || "—"}</small></p></div>,
+        <span key="pl" className="cell-meter"><i style={{ width: `${(Number(row.plays || 0) / topPlays) * 100}%` }} /><b>{Number(row.plays || 0).toLocaleString()}</b></span>,
+        <span key="wt" className="num">{clock(row.watchTimeSec)}</span>,
+        pct(row.completionRate) == null ? "—" : <span key="cr" className="cell-meter green"><i style={{ width: `${pct(row.completionRate)}%` }} /><b>{pct(row.completionRate)}%</b></span>,
+        Number(row.likes || 0), Number(row.saves || 0),
+      ])} />
+    </>;
+  }}</Gate>;
   if (view === "insights") return <Gate state={state}>{(data) => <><Head title="Performance analytics" sub="Track how your properties and content are performing across PlaceIn." /><Metrics><Stat icon="House" title="Available properties" value={data.available} note="Live listings" tone="green" /><Stat icon="MessageSquareText" title="Open enquiries" value={data.openEnquiries} note={`${data.enquiriesThisMonth} this month`} tone="pink" /><Stat icon="CalendarCheck" title="Appointments" value={data.upcomingAppointments} note="Upcoming" tone="purple" /><Stat icon="CirclePlay" title="Reel plays" value={Number(data.reelPlays || 0).toLocaleString()} note="Published reels" /></Metrics><Series series={data.series} label="Enquiries trend" /></>}</Gate>;
   return <Gate state={state}>{(data) => <><Head code="16 / 24" title="App usage and audience analytics" sub={`Period ${day(data.period.from)} to ${day(data.period.to)}. Last metric day ${day(data.sourceUpdatedAt)}.`} />
     <Note>{data.note} Downloads, accounts, login events and active users are separate measures. Comparison with a previous month is not shown because this feed has period totals only.</Note>
